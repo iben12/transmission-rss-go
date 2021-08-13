@@ -33,4 +33,8 @@ func main() {
 
 	fmt.Println("Episode count: ", len(episodes))
 	fmt.Println("Title of first episode is:", episodes[0].Title)
+
+	var slack SlackNotification
+
+	slack.Send("hello", "bello")
 }
