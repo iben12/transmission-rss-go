@@ -1,0 +1,25 @@
+services:
+  db:
+    image: mariadb
+    env_file: 
+      - .env
+    ports:
+      - 13306:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+  transmission:
+    image: ghcr.io/linuxserver/transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Budapest
+      - USER=trss
+      - PASS=trss
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
