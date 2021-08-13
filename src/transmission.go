@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/hekmon/transmissionrpc"
-	_ "github.com/joho/godotenv/autoload"
 	"os"
 	"time"
 )
+
+type Trs struct{}
 
 var client transmissionrpc.Client
 
@@ -26,7 +27,7 @@ func init() {
 	}
 }
 
-func checkVersion() (ok bool) {
+func (trs *Trs) CheckVersion() (ok bool) {
 	ok, serverVersion, serverMinimumVersion, err := client.RPCVersion()
 	if err != nil {
 		panic(err)
@@ -41,7 +42,7 @@ func checkVersion() (ok bool) {
 	return true
 }
 
-func getAllTorrents(fields []string) (t []*transmissionrpc.Torrent) {
+func (trs *Trs) getAllTorrents(fields []string) (t []*transmissionrpc.Torrent) {
 	torrents, err := client.TorrentGet(fields, nil)
 	if err != nil {
 		panic(err)
@@ -50,8 +51,8 @@ func getAllTorrents(fields []string) (t []*transmissionrpc.Torrent) {
 	}
 }
 
-func getFinished() (t []int64) {
-	torrents := getAllTorrents([]string{"id", "isFinished"})
+func (trs *Trs) getFinished() (t []int64) {
+	torrents := trs.getAllTorrents([]string{"id", "isFinished"})
 	finishedTorrents := []int64{}
 	for _, torrent := range torrents {
 		if *torrent.IsFinished {
