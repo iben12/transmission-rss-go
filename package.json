@@ -1,0 +1,33 @@
+{
+  "name": "transmission-rss-go",
+  "version": "1.0.0",
+  "description": "",
+  "main": "js/app.js",
+  "scripts": {
+    "build": "npx webpack --progress --mode=production",
+    "dev": "npx webpack serve --config webpack.devserver.config.js --mode=development",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "iben12",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.1",
+    "moment-mini": "^2.24.0",
+    "sass": "^1.37.5",
+    "vue": "^2.1.10"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.7.5",
+    "@babel/preset-env": "^7.7.6",
+    "babel-loader": "^8.0.6",
+    "core-js": "3",
+    "css-loader": "^0.26.1",
+    "extract-text-webpack-plugin": "^4.0.0-beta.0",
+    "raw-loader": "^0.5.1",
+    "sass-loader": "^7.1.0",
+    "style-loader": "^0.13.1",
+    "webpack": "^4.46.0",
+    "webpack-cli": "^4.7.2",
+    "webpack-dev-server": "^3.11.2"
+  }
+}
