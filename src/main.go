@@ -10,6 +10,9 @@ import (
 func main() {
 	fmt.Println("Starting")
 
+	feed := Feed{}
+	feed.fetch("https://showrss.info/show/951.rss")
+
 	trs := Trs{}
 
 	finishedTorrents := trs.getFinished()
@@ -30,5 +33,4 @@ func main() {
 
 	fmt.Println("Episode count: ", len(episodes))
 	fmt.Println("Title of first episode is:", episodes[0].Title)
-
 }
