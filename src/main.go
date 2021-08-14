@@ -10,11 +10,17 @@ import (
 	// "os"
 )
 
+func handleStatic() (h http.Handler) {
+	server := http.FileServer(http.Dir("./static"))
+	return server
+}
+
 func handleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	api := new(Api)
 
+	router.Handle("/", handleStatic())
 	router.HandleFunc("/api/episodes", api.episodes)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
