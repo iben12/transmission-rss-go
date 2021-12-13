@@ -1,4 +1,4 @@
-package main
+package transmissionrss
 
 import (
 	"fmt"
@@ -61,4 +61,14 @@ func (trs *Trs) getFinished() (t []int64) {
 	}
 
 	return finishedTorrents
+}
+
+func (trs *Trs) addDownload(episode Episode) bool {
+	paused := true
+
+	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, Paused: &paused}
+
+	_, err := client.TorrentAdd(torrentToAdd)
+
+	return err == nil
 }

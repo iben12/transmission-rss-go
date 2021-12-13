@@ -1,4 +1,4 @@
-package main
+package transmissionrss
 
 import (
 	"gorm.io/gorm"

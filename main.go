@@ -3,11 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/iben12/transmission-rss-go/src"
 	"log"
 	"net/http"
-	// "github.com/hekmon/transmissionrpc"
-	// "os"
 )
 
 func handleStatic() (h http.Handler) {
@@ -18,10 +16,11 @@ func handleStatic() (h http.Handler) {
 func handleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 
-	api := new(Api)
+	api := new(transmissionrss.Api)
 
 	router.Handle("/", handleStatic())
-	router.HandleFunc("/api/episodes", api.episodes)
+	router.HandleFunc("/api/episodes", api.Episodes)
+	router.HandleFunc("/api/download", api.Download)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

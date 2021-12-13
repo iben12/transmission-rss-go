@@ -1,11 +1,13 @@
-package main
+package transmissionrss
 
 import (
+	"errors"
 	"fmt"
-	"github.com/antchfx/xmlquery"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/antchfx/xmlquery"
 )
 
 type Feed struct{}
@@ -18,20 +20,16 @@ type FeedItem struct {
 	Link      string
 }
 
-func (f *Feed) fetch(rssAddress string) {
-	resp, err := http.Get(rssAddress)
-	if err != nil {
-		panic(fmt.Sprintf("Can't fetch RSS feed: %s", rssAddress))
-	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+func (f *Feed) parse(xml string) (items []FeedItem, err error) {
 
 	var feedItems []FeedItem
 
-	feed, parseError := xmlquery.Parse(strings.NewReader(string(body)))
+	feed, parseError := xmlquery.Parse(strings.NewReader(xml))
+
 	if parseError != nil {
-		panic("Couldn't parse XML feed")
+		return nil, errors.New("cannot parse XML")
 	}
+
 	for _, item := range xmlquery.Find(feed, "//item") {
 		title := item.SelectElement("//title").InnerText()
 		showTitle := item.SelectElement("//tv:show_name").InnerText()
@@ -42,6 +40,17 @@ func (f *Feed) fetch(rssAddress string) {
 		feedItems = append(feedItems, FeedItem{title, showTitle, episodeId, showId, link})
 	}
 
-	fmt.Println("Title:", feedItems[0].Title)
-	fmt.Println("Episode count:", len(feedItems))
+	return feedItems, nil
+}
+
+func (f *Feed) fetchRss(rssAddress string) (string, error) {
+	resp, err := http.Get(rssAddress)
+	if err != nil {
+		return "", fmt.Errorf("can't fetch RSS feed: %s", rssAddress)
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	return string(body), nil
 }
