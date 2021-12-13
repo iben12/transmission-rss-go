@@ -37,5 +37,20 @@ func download(feedItems []FeedItem, db *gorm.DB) (downloaded []Episode, errs []e
 		}
 	}
 
+	notify(episodesAdded)
+
 	return episodesAdded, errs
+}
+
+func notify(episodes []Episode) {
+	title := "TransmissionRSS: New episode(s)"
+	body := "Added episodes:"
+
+	for _, episode := range episodes {
+		body += "\n" + episode.Title
+	}
+
+	slackNotification := new(SlackNotification)
+
+	slackNotification.Send(title, body)
 }
