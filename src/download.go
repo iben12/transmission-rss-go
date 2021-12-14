@@ -37,7 +37,9 @@ func download(feedItems []FeedItem, db *gorm.DB) (downloaded []Episode, errs []e
 		}
 	}
 
-	notify(episodesAdded)
+	if len(episodesAdded) > 0 {
+		notify(episodesAdded)
+	}
 
 	return episodesAdded, errs
 }

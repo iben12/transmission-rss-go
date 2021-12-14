@@ -8,20 +8,18 @@ import (
 	"net/http"
 )
 
-func handleStatic() (h http.Handler) {
-	server := http.FileServer(http.Dir("./static"))
-	return server
-}
-
 func handleRequests() {
+	static := http.FileServer(http.Dir("./static"))
+
 	router := mux.NewRouter().StrictSlash(true)
 
 	api := new(transmissionrss.Api)
 
-	router.Handle("/", handleStatic())
+	router.HandleFunc("/api/feeds", api.Feeds)
 	router.HandleFunc("/api/episodes", api.Episodes)
 	router.HandleFunc("/api/download", api.Download)
 	router.HandleFunc("/api/cleanup", api.Clean)
+	router.PathPrefix("/").Handler(static)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

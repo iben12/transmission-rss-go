@@ -6,9 +6,9 @@ import (
 
 type Episode struct {
 	gorm.Model
-	ShowId    string
-	EpisodeId string
-	ShowTitle string
-	Title     string
-	Link      string
+	ShowId    string `json:"show_id"`
+	EpisodeId string `json:"episode_id"`
+	ShowTitle string `json:"show_title"`
+	Title     string `json:"title"`
+	Link      string `json:"link"`
 }
