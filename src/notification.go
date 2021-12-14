@@ -38,7 +38,6 @@ func (s SlackNotification) Send(title string, body string) {
 	payload := s.renderPayload(title, body)
 	json, _ := json.Marshal(payload)
 
-	fmt.Println(string(json))
 	resp, err := http.Post(os.Getenv("SLACK_URL"), "application/json", bytes.NewBuffer(json))
 	if err != nil {
 		panic(err)
@@ -46,8 +45,7 @@ func (s SlackNotification) Send(title string, body string) {
 	defer resp.Body.Close()
 	respBytes, _ := ioutil.ReadAll(resp.Body)
 
-	fmt.Println(string(respBytes))
-
+	fmt.Println("Notification status:", string(respBytes))
 }
 
 func (s SlackNotification) renderPayload(title string, body string) (p SlackPayload) {

@@ -1,5 +1,5 @@
 build:
-	go build -o ./bin/trss ./src
+	go build -o ./bin/trss ./main.go
 
 run:
 	go run main.go

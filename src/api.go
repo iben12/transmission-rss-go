@@ -47,3 +47,31 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(episodes)
 }
+
+func (a *Api) Clean(w http.ResponseWriter, r *http.Request) {
+	trs := new(Trs)
+
+	ids, titles := trs.getFinished()
+
+	if len(ids) > 0 {
+		err := trs.remove(ids)
+
+		if err != nil {
+			w.WriteHeader(500)
+			io.WriteString(w, "{\"error\": \"Could not remove torrents\"}")
+		}
+
+		title := "TransmissionRSS: Removed episode(s)"
+		body := "Removed episodes:"
+
+		for _, episode := range titles {
+			body += "\n" + episode
+		}
+
+		slackNotification := new(SlackNotification)
+
+		slackNotification.Send(title, body)
+	}
+
+	json.NewEncoder(w).Encode(titles)
+}

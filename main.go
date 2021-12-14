@@ -21,6 +21,7 @@ func handleRequests() {
 	router.Handle("/", handleStatic())
 	router.HandleFunc("/api/episodes", api.Episodes)
 	router.HandleFunc("/api/download", api.Download)
+	router.HandleFunc("/api/cleanup", api.Clean)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

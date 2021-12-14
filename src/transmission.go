@@ -51,16 +51,18 @@ func (trs *Trs) getAllTorrents(fields []string) (t []*transmissionrpc.Torrent) {
 	}
 }
 
-func (trs *Trs) getFinished() (t []int64) {
-	torrents := trs.getAllTorrents([]string{"id", "isFinished"})
-	finishedTorrents := []int64{}
+func (trs *Trs) getFinished() (ids []int64, titles []string) {
+	torrents := trs.getAllTorrents([]string{"id", "isFinished", "name"})
+	finishedTorrentIds := []int64{}
+	finishedTorrentTitles := []string{}
 	for _, torrent := range torrents {
 		if *torrent.IsFinished {
-			finishedTorrents = append(finishedTorrents, *torrent.ID)
+			finishedTorrentIds = append(finishedTorrentIds, *torrent.ID)
+			finishedTorrentTitles = append(finishedTorrentTitles, *torrent.Name)
 		}
 	}
 
-	return finishedTorrents
+	return finishedTorrentIds, finishedTorrentTitles
 }
 
 func (trs *Trs) addDownload(episode Episode) bool {
@@ -71,4 +73,11 @@ func (trs *Trs) addDownload(episode Episode) bool {
 	_, err := client.TorrentAdd(torrentToAdd)
 
 	return err == nil
+}
+
+func (trs *Trs) remove(ids []int64) error {
+	payload := &transmissionrpc.TorrentRemovePayload{IDs: ids, DeleteLocalData: false}
+	err := client.TorrentRemove(payload)
+
+	return err
 }
