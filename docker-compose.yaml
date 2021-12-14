@@ -20,6 +20,13 @@ services:
       - 51413:51413
       - 51413:51413/udp
     restart: unless-stopped
+    
+  # app:
+  #   build: .
+  #   ports:
+  #     - 8080:8080
+  #   volumes:
+  #     - ./.env:/app/.env
 
 volumes:
   mysql_data:
