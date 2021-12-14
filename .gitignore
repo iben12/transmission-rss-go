@@ -1,3 +1,4 @@
 .env
 bin
 *.sql
+node_modules
