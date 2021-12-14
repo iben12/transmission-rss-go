@@ -3,6 +3,7 @@ package transmissionrss
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -34,18 +35,37 @@ type SlackPayload struct {
 	Blocks  []SlackBlock `json:"blocks"`
 }
 
-func (s SlackNotification) Send(title string, body string) {
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+var (
+	Client HTTPClient
+)
+
+func init() {
+	Client = &http.Client{}
+}
+
+func (s SlackNotification) Send(title string, body string) error {
 	payload := s.renderPayload(title, body)
 	json, _ := json.Marshal(payload)
 
-	resp, err := http.Post(os.Getenv("SLACK_URL"), "application/json", bytes.NewBuffer(json))
+	request, _ := http.NewRequest(http.MethodPost, os.Getenv("SLACK_URL"), bytes.NewBuffer(json))
+
+	resp, err := Client.Do(request)
+
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer resp.Body.Close()
 	respBytes, _ := ioutil.ReadAll(resp.Body)
 
-	fmt.Println("Notification status:", string(respBytes))
+	if string(respBytes) != "ok" {
+		return errors.New(string(respBytes))
+	}
+
+	return nil
 }
 
 func (s SlackNotification) renderPayload(title string, body string) (p SlackPayload) {

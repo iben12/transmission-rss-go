@@ -41,7 +41,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	feedItems, err2 := feed.parse(xml)
+	feedItems, err2 := feed.Parse(xml)
 
 	if err2 != nil {
 		w.WriteHeader(500)

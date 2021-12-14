@@ -1,12 +1,42 @@
-package transmissionrss
+package transmissionrss_test
 
 import (
-	"errors"
+	"github.com/iben12/transmission-rss-go/src"
 	"testing"
 )
 
+func TestFeedParse(t *testing.T) {
+
+	t.Run("Valid XML", func(t *testing.T) {
+		feed := new(transmissionrss.Feed)
+
+		items, _ := feed.Parse(validXml)
+
+		expectedLength := 1
+
+		if len(items) != expectedLength {
+			t.Errorf("Expected length to be %d, got %d", expectedLength, len(items))
+		}
+
+		if items[0].ShowTitle != "Million Dollar Listing: Los Angeles" {
+			t.Errorf("Expected ShowTitle to be 'Million Dollar Listing: Los Angeles' got %s", items[0].ShowTitle)
+		}
+	})
+
+	t.Run("Invalid XML", func(t *testing.T) {
+		feed := new(transmissionrss.Feed)
+
+		items, err := feed.Parse(invalidXml)
+
+		if err == nil {
+			t.Errorf("Expected error, but got %d", len(items))
+		}
+	})
+
+}
+
 const (
-	responseXml = `
+	validXml = `
 		<?xml version="1.0" encoding="UTF-8"?>
 			<rss version="2.0" xmlns:tv="https://showrss.info">
 				<channel>
@@ -27,44 +57,5 @@ const (
 				</channel>
 			</rss>
 		`
+	invalidXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><rss>"
 )
-
-func TestFeedParse(t *testing.T) {
-	var tests = []struct {
-		xml         string
-		expected    int
-		err         error
-		description string
-	}{
-		{responseXml, 1, nil, "Valid XML response"},
-		{"<?xml version=\"1.0\" encoding=\"UTF-8\"?><rss>", 0, errors.New("cannot parse XML"), "Invalid XML response"},
-	}
-
-	for _, test := range tests {
-		t.Log(test.description)
-
-		feed := new(Feed)
-
-		items, err := feed.parse(test.xml)
-
-		if err != nil && test.err == nil {
-			t.Error("Expected {}, but got error", test.expected, err)
-		}
-
-		if err == nil && test.err != nil {
-			t.Error("Expected error {}, but got nil", test.err)
-		}
-
-		if err != nil && test.err != nil {
-			return
-		}
-
-		if len(items) != test.expected {
-			t.Error("Expected length to be {}, got {}", test.expected, len(items))
-		}
-
-		if items[0].ShowTitle != "Million Dollar Listing: Los Angeles" {
-			t.Errorf("Expected ShowTitle to be 'Million Dollar Listing: Los Angeles' got %s", items[0].ShowTitle)
-		}
-	}
-}

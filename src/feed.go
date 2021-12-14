@@ -3,11 +3,10 @@ package transmissionrss
 import (
 	"errors"
 	"fmt"
+	"github.com/antchfx/xmlquery"
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/antchfx/xmlquery"
 )
 
 type Feed struct{}
@@ -20,7 +19,7 @@ type FeedItem struct {
 	Link      string
 }
 
-func (f *Feed) parse(xml string) (items []FeedItem, err error) {
+func (f *Feed) Parse(xml string) (items []FeedItem, err error) {
 
 	var feedItems []FeedItem
 

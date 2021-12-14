@@ -1,0 +1,56 @@
+package transmissionrss_test
+
+import (
+	"bytes"
+	"github.com/iben12/transmission-rss-go/src"
+	"github.com/iben12/transmission-rss-go/tests/mocks"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"testing"
+)
+
+func TestNotification(t *testing.T) {
+	os.Setenv("SLACK_URL", "https://hooks.slack.com/services/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")
+	transmissionrss.Client = &mocks.MockClient{}
+
+	t.Run("Notification gets through", func(t *testing.T) {
+		response := ioutil.NopCloser(bytes.NewReader([]byte("ok")))
+		mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: 200,
+				Body:       response,
+			}, nil
+		}
+
+		notification := new(transmissionrss.SlackNotification)
+		err := notification.Send("hello", "bello")
+
+		if err != nil {
+			t.Error("Expected no error, but got:", err)
+		}
+	})
+
+	t.Run("Notification fails", func(t *testing.T) {
+		errorMessage := "invalid payload"
+		response := ioutil.NopCloser(bytes.NewReader([]byte(errorMessage)))
+		mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: 400,
+				Body:       response,
+			}, nil
+		}
+
+		notification := new(transmissionrss.SlackNotification)
+		err := notification.Send("hello", "bello")
+
+		if err == nil {
+			t.Error("Expected error, but got nil")
+		}
+
+		if err.Error() != errorMessage {
+			t.Errorf("Expected error '%s', but got '%s'", errorMessage, err.Error())
+		}
+	})
+
+}
