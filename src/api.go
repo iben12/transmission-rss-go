@@ -38,6 +38,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	if err1 != nil {
 		w.WriteHeader(500)
 		io.WriteString(w, "{\"error\": \"Could not fetch feed\"}")
+		return
 	}
 
 	feedItems, err2 := feed.parse(xml)
@@ -45,6 +46,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	if err2 != nil {
 		w.WriteHeader(500)
 		io.WriteString(w, "{\"error\": \"Could not parse feed\"}")
+		return
 	}
 
 	db := new(DB).getConnection()
@@ -54,6 +56,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	if errs != nil {
 		w.WriteHeader(500)
 		io.WriteString(w, "{\"error\": \"Could not download items\"}")
+		return
 	}
 
 	json.NewEncoder(w).Encode(downloaded)
@@ -70,6 +73,7 @@ func (a *Api) Clean(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(500)
 			io.WriteString(w, "{\"error\": \"Could not remove torrents\"}")
+			return
 		}
 
 		title := "TransmissionRSS: Removed episode(s)"
