@@ -10,6 +10,17 @@ import (
 
 type Api struct{}
 
+func (a *Api) Feeds(w http.ResponseWriter, r *http.Request) {
+	type Feed struct {
+		Name string `json:"name"`
+		Url  string `json:"url"`
+	}
+
+	feeds := []Feed{{Name: "ShowRSS", Url: os.Getenv("RSS_FEED_ADDRESS")}}
+
+	json.NewEncoder(w).Encode(feeds)
+}
+
 func (a *Api) Episodes(w http.ResponseWriter, r *http.Request) {
 	db := new(DB).getConnection()
 
@@ -38,14 +49,14 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 
 	db := new(DB).getConnection()
 
-	episodes, errs := download(feedItems, db)
+	downloaded, errs := download(feedItems, db)
 
 	if errs != nil {
 		w.WriteHeader(500)
 		io.WriteString(w, "{\"error\": \"Could not download items\"}")
 	}
 
-	json.NewEncoder(w).Encode(episodes)
+	json.NewEncoder(w).Encode(downloaded)
 }
 
 func (a *Api) Clean(w http.ResponseWriter, r *http.Request) {
