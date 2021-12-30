@@ -2,11 +2,22 @@ package transmissionrss
 
 import (
 	"encoding/json"
-	_ "github.com/joho/godotenv/autoload"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+
+	_ "github.com/joho/godotenv/autoload"
+	"gorm.io/gorm"
 )
+
+var (
+	DbConnection *gorm.DB
+)
+
+func init() {
+	DbConnection = new(DB).getConnection()
+}
 
 type Api struct{}
 
@@ -22,10 +33,8 @@ func (a *Api) Feeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Api) Episodes(w http.ResponseWriter, r *http.Request) {
-	db := new(DB).getConnection()
-
 	episodes := []Episode{}
-	db.Find(&episodes)
+	DbConnection.Find(&episodes)
 
 	json.NewEncoder(w).Encode(episodes)
 }
@@ -49,17 +58,23 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := new(DB).getConnection()
+	downloaded, errs := download(feedItems, dbConnection)
 
-	downloaded, errs := download(feedItems, db)
-
-	if errs != nil {
-		w.WriteHeader(500)
-		io.WriteString(w, "{\"error\": \"Could not download items\"}")
-		return
+	type Response struct {
+		Errors   []string
+		Episodes []Episode
 	}
 
-	json.NewEncoder(w).Encode(downloaded)
+	response := Response{
+		Errors:   errs,
+		Episodes: downloaded,
+	}
+
+	if len(errs) != 0 {
+		fmt.Printf("Failed to add episodes: %v", errs)
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
 
 func (a *Api) Clean(w http.ResponseWriter, r *http.Request) {

@@ -2,14 +2,18 @@ package transmissionrss
 
 import (
 	"fmt"
-	"github.com/hekmon/transmissionrpc"
 	"os"
+	"strconv"
 	"time"
+
+	"github.com/hekmon/transmissionrpc"
 )
 
 type Trs struct{}
 
 var client transmissionrpc.Client
+
+var addPaused, _ = strconv.ParseBool(os.Getenv("ADD_PAUSED"))
 
 func init() {
 	const timeout time.Duration = 12 * time.Second
@@ -65,14 +69,12 @@ func (trs *Trs) getFinished() (ids []int64, titles []string) {
 	return finishedTorrentIds, finishedTorrentTitles
 }
 
-func (trs *Trs) addDownload(episode Episode) bool {
-	paused := true
-
-	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, Paused: &paused}
+func (trs *Trs) AddDownload(episode Episode) error {
+	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, Paused: &addPaused}
 
 	_, err := client.TorrentAdd(torrentToAdd)
 
-	return err == nil
+	return err
 }
 
 func (trs *Trs) remove(ids []int64) error {

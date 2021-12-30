@@ -40,5 +40,7 @@ func (d *DB) connect() (db *gorm.DB) {
 		panic("failed to connect database")
 	}
 
+	db.AutoMigrate(&Episode{})
+
 	return db
 }
