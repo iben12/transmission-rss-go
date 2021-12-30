@@ -123,9 +123,14 @@ var body = new Vue({
             let url = 'api/download';
             let vue = this;
             Axios.get(url).then(response => {
-                this.addEpisodes(response.data);
+                if (response.data.Errors && response.data.Errors.length > 0) {
+                    vue.message = "Some errors happened"
+                }
+                vue.addEpisodes(response.data.Episodes);
             }).catch(function(e) {
                 console.log(e);
+                vue.message = "Error happened downloading episodes";
+                vue.notifyTimeout();
             });
         },
         addEpisodes: function(episodes) {
@@ -136,9 +141,10 @@ var body = new Vue({
                     this.episodes.push(episode);
                 }
                 this.groupEpisodes();
-                this.notify = false;
+                this.message += "<br/>Fetched episodes"
+                this.notifyTimeout();
             } else {
-                this.message = "No new episodes this time.";
+                this.message += "<br/>No new episodes this time.";
                 this.notifyTimeout();
             }
         },
