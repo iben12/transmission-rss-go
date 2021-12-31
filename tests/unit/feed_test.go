@@ -1,7 +1,7 @@
 package transmissionrss_test
 
 import (
-	"github.com/iben12/transmission-rss-go/src"
+	"github.com/iben12/transmission-rss-go/trss"
 	"testing"
 )
 

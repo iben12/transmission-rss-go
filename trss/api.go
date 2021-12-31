@@ -15,8 +15,10 @@ var (
 	DbConnection *gorm.DB
 )
 
-func init() {
+func NewApi() *Api {
 	DbConnection = new(DB).getConnection()
+
+	return new(Api)
 }
 
 type Api struct{}

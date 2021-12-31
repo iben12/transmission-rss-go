@@ -13,7 +13,7 @@ func handleRequests() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	api := new(transmissionrss.Api)
+	api := transmissionrss.NewApi()
 
 	router.HandleFunc("/api/feeds", api.Feeds)
 	router.HandleFunc("/api/episodes", api.Episodes)

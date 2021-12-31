@@ -2,8 +2,8 @@ package transmissionrss_test
 
 import (
 	"bytes"
-	"github.com/iben12/transmission-rss-go/src"
 	"github.com/iben12/transmission-rss-go/tests/mocks"
+	"github.com/iben12/transmission-rss-go/trss"
 	"io/ioutil"
 	"net/http"
 	"os"
