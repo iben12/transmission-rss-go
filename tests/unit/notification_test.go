@@ -11,7 +11,7 @@ import (
 )
 
 func TestNotification(t *testing.T) {
-	os.Setenv("SLACK_URL", "https://hooks.slack.com/services/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")
+	os.Setenv("SLACK_URL", "https://hooks.slack.com/services/testurl")
 	transmissionrss.Client = &mocks.MockClient{}
 
 	t.Run("Notification gets through", func(t *testing.T) {
