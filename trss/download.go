@@ -3,8 +3,6 @@ package transmissionrss
 import (
 	"errors"
 	"fmt"
-	"sync"
-
 	"gorm.io/gorm"
 )
 
@@ -18,35 +16,38 @@ func init() {
 	SlackClient = new(SlackNotification)
 }
 
-func download(feedItems []FeedItem, db *gorm.DB) (downloaded []Episode, errs []string) {
-	episodesChannel := make(chan Episode, len(feedItems))
-	errorChannel := make(chan error, len(feedItems))
-
-	var wg sync.WaitGroup
+func download(feedItems []FeedItem, db *gorm.DB) ([]Episode, []string) {
+	var episodesAdded []Episode
+	var errs []string
+	var resultChans []chan Episode
+	var errorChans []chan error
 
 	for _, feedItem := range feedItems {
 		episode := Episode{}
 		result := db.Where(&Episode{ShowId: feedItem.ShowId, EpisodeId: feedItem.EpisodeId}).First(&episode)
 
 		if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			wg.Add(1)
-			go processEpisode(feedItem, episodesChannel, errorChannel, &wg, db)
+			resultChan := make(chan Episode, 1)
+			errChan := make(chan error, 1)
+			go processEpisode(feedItem, resultChan, errChan, db)
+
+			errorChans = append(errorChans, errChan)
+			resultChans = append(resultChans, resultChan)
 		}
 	}
 
-	wg.Wait()
-
-	close(episodesChannel)
-	close(errorChannel)
-
-	var episodesAdded []Episode
-
-	for episode := range episodesChannel {
-		episodesAdded = append(episodesAdded, episode)
+	for _, resultChan := range resultChans {
+		result := <-resultChan
+		if result.ID != 0 {
+			episodesAdded = append(episodesAdded, result)
+		}
 	}
 
-	for err := range errorChannel {
-		errs = append(errs, err.Error())
+	for _, errorChan := range errorChans {
+		err := <-errorChan
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
 	}
 
 	if len(episodesAdded) > 0 {
@@ -71,12 +72,12 @@ func notify(episodes []Episode) {
 
 func processEpisode(
 	feedItem FeedItem,
-	episodesChannel chan Episode,
-	errorChannel chan error,
-	wg *sync.WaitGroup,
+	result chan Episode,
+	err chan error,
 	db *gorm.DB) {
 
-	defer wg.Done()
+	defer close(result)
+	defer close(err)
 
 	episode := Episode{
 		Model:     gorm.Model{},
@@ -93,11 +94,11 @@ func processEpisode(
 		saved := db.Create(&episode)
 
 		if saved.Error == nil {
-			episodesChannel <- episode
+			result <- episode
 		} else {
-			errorChannel <- saved.Error
+			err <- saved.Error
 		}
 	} else {
-		errorChannel <- transmissionError
+		err <- transmissionError
 	}
 }
