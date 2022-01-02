@@ -17,10 +17,12 @@ func init() {
 }
 
 func download(feedItems []FeedItem, db *gorm.DB) ([]Episode, []string) {
-	var episodesAdded []Episode
-	var errs []string
-	var resultChans []chan Episode
-	var errorChans []chan error
+	var (
+		episodesAdded []Episode
+		errs          []string
+		resultChans   []chan Episode
+		errorChans    []chan error
+	)
 
 	for _, feedItem := range feedItems {
 		episode := Episode{}
@@ -74,8 +76,8 @@ func processEpisode(
 	feedItem FeedItem,
 	result chan Episode,
 	err chan error,
-	db *gorm.DB) {
-
+	db *gorm.DB,
+) {
 	defer close(result)
 	defer close(err)
 
