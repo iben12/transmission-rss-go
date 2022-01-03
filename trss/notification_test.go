@@ -12,11 +12,11 @@ import (
 
 func TestNotification(t *testing.T) {
 	os.Setenv("SLACK_URL", "https://hooks.slack.com/services/testurl")
-	transmissionrss.Client = &mocks.MockClient{}
+	transmissionrss.Client = &mocks.MockHttpClient{}
 
 	t.Run("Notification gets through", func(t *testing.T) {
 		response := ioutil.NopCloser(bytes.NewReader([]byte("ok")))
-		mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
+		mocks.GetHttpDoFunc = func(*http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 200,
 				Body:       response,
@@ -34,7 +34,7 @@ func TestNotification(t *testing.T) {
 	t.Run("Notification fails", func(t *testing.T) {
 		errorMessage := "invalid payload"
 		response := ioutil.NopCloser(bytes.NewReader([]byte(errorMessage)))
-		mocks.GetDoFunc = func(*http.Request) (*http.Response, error) {
+		mocks.GetHttpDoFunc = func(*http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 400,
 				Body:       response,

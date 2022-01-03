@@ -8,12 +8,12 @@ import (
 
 var (
 	TransmissionClient *Trs
-	SlackClient        *SlackNotification
+	SlackClient        Notification
 )
 
 func init() {
 	TransmissionClient = &Trs{}
-	SlackClient = new(SlackNotification)
+	SlackClient = &SlackNotification{}
 }
 
 func download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []string) {

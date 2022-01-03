@@ -11,7 +11,7 @@ import (
 )
 
 type Notification interface {
-	Send(title string, body string)
+	Send(title string, body string) error
 }
 
 type SlackNotification struct{}
@@ -47,7 +47,7 @@ func init() {
 	Client = &http.Client{}
 }
 
-func (s SlackNotification) Send(title string, body string) error {
+func (s *SlackNotification) Send(title string, body string) error {
 	payload := s.renderPayload(title, body)
 	json, _ := json.Marshal(payload)
 
@@ -68,7 +68,7 @@ func (s SlackNotification) Send(title string, body string) error {
 	return nil
 }
 
-func (s SlackNotification) renderPayload(title string, body string) (p SlackPayload) {
+func (s *SlackNotification) renderPayload(title string, body string) (p SlackPayload) {
 	payload := SlackPayload{
 		Channel: os.Getenv("SLACK_CHANNEL"),
 		Text:    title,
