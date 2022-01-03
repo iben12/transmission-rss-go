@@ -48,14 +48,14 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	rssAddress := os.Getenv("RSS_FEED_ADDRESS")
 
 	feed := new(Feed)
-	xml, err1 := feed.fetchRss(rssAddress)
-	if err1 != nil {
-		w.WriteHeader(500)
-		io.WriteString(w, "{\"error\": \"Could not fetch feed\"}")
-		return
-	}
+	// xml, err1 := feed.fetchRss(rssAddress)
+	// if err1 != nil {
+	// 	w.WriteHeader(500)
+	// 	io.WriteString(w, "{\"error\": \"Could not fetch feed\"}")
+	// 	return
+	// }
 
-	feedItems, err2 := feed.Parse(xml)
+	feedItems, err2 := feed.FetchItems(rssAddress)
 
 	if err2 != nil {
 		w.WriteHeader(500)
@@ -64,6 +64,14 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	downloaded, errs := download(feedItems, episodeHandler)
+
+	if len(downloaded) > 0 {
+		notify(downloaded)
+		Logger.Info().
+			Str("action", "downloaded").
+			Int("count", len(downloaded)).
+			Msg("Downloaded episodes")
+	}
 
 	type Response struct {
 		Errors   []string
@@ -105,4 +113,16 @@ func (a *Api) Clean(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(titles)
+}
+
+func notify(episodes []Episode) {
+	SlackClient := &SlackNotification{}
+	title := "TransmissionRSS: New episode(s)"
+	body := "Added episodes:"
+
+	for _, episode := range episodes {
+		body += "\n" + episode.Title
+	}
+
+	SlackClient.Send(title, body)
 }

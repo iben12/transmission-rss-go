@@ -1,18 +1,39 @@
 package transmissionrss_test
 
 import (
-	"github.com/iben12/transmission-rss-go/trss"
+	"bytes"
+	"io/ioutil"
+	"net/http"
 	"testing"
+
+	"github.com/iben12/transmission-rss-go/tests/mocks"
+	"github.com/iben12/transmission-rss-go/trss"
 )
 
 func TestFeedParse(t *testing.T) {
+	transmissionrss.HttpClient = &mocks.MockHttpClient{}
+	rssAddress := "https://rss.feed/url"
 
 	t.Run("Valid XML", func(t *testing.T) {
+		response := ioutil.NopCloser(bytes.NewReader([]byte(validXml)))
+		var host string
+		mocks.GetHttpDoFunc = func(req *http.Request) (*http.Response, error) {
+			host = req.URL.String()
+			return &http.Response{
+				StatusCode: 200,
+				Body:       response,
+			}, nil
+		}
+
 		feed := new(transmissionrss.Feed)
 
-		items, _ := feed.Parse(validXml)
+		items, _ := feed.FetchItems(rssAddress)
 
 		expectedLength := 1
+
+		if host != rssAddress {
+			t.Errorf("Expected host %s but got: %s", rssAddress, host)
+		}
 
 		if len(items) != expectedLength {
 			t.Errorf("Expected length to be %d, got %d", expectedLength, len(items))
@@ -24,9 +45,17 @@ func TestFeedParse(t *testing.T) {
 	})
 
 	t.Run("Invalid XML", func(t *testing.T) {
+		response := ioutil.NopCloser(bytes.NewReader([]byte(invalidXml)))
+		mocks.GetHttpDoFunc = func(req *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: 200,
+				Body:       response,
+			}, nil
+		}
+
 		feed := new(transmissionrss.Feed)
 
-		items, err := feed.Parse(invalidXml)
+		items, err := feed.FetchItems(invalidXml)
 
 		if err == nil {
 			t.Errorf("Expected error, but got %d", len(items))

@@ -2,7 +2,6 @@ package transmissionrss
 
 import (
 	"errors"
-	"fmt"
 	"github.com/antchfx/xmlquery"
 	"io/ioutil"
 	"net/http"
@@ -19,13 +18,27 @@ type FeedItem struct {
 	Link      string
 }
 
-func (f *Feed) Parse(xml string) (items []FeedItem, err error) {
+func (f *Feed) FetchItems(rssAddress string) (items []FeedItem, err error) {
+	xml, err := f.fetchRss(rssAddress)
+
+	if err != nil {
+		Logger.Error().
+			Str("action", "fetch feed").
+			Str("url", rssAddress).
+			Err(err)
+
+		return nil, err
+	}
 
 	var feedItems []FeedItem
 
 	feed, parseError := xmlquery.Parse(strings.NewReader(xml))
 
 	if parseError != nil {
+		Logger.Error().
+			Str("action", "parse feed").
+			Err(parseError)
+
 		return nil, errors.New("cannot parse XML")
 	}
 
@@ -43,10 +56,14 @@ func (f *Feed) Parse(xml string) (items []FeedItem, err error) {
 }
 
 func (f *Feed) fetchRss(rssAddress string) (string, error) {
-	resp, err := http.Get(rssAddress)
+	request, _ := http.NewRequest(http.MethodGet, rssAddress, nil)
+
+	resp, err := HttpClient.Do(request)
+
 	if err != nil {
-		return "", fmt.Errorf("can't fetch RSS feed: %s", rssAddress)
+		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)

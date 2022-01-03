@@ -35,25 +35,13 @@ type SlackPayload struct {
 	Blocks  []SlackBlock `json:"blocks"`
 }
 
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
-var (
-	Client HTTPClient
-)
-
-func init() {
-	Client = &http.Client{}
-}
-
 func (s *SlackNotification) Send(title string, body string) error {
 	payload := s.renderPayload(title, body)
 	json, _ := json.Marshal(payload)
 
 	request, _ := http.NewRequest(http.MethodPost, os.Getenv("SLACK_URL"), bytes.NewBuffer(json))
 
-	resp, err := Client.Do(request)
+	resp, err := HttpClient.Do(request)
 
 	if err != nil {
 		return err

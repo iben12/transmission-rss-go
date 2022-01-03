@@ -6,16 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	TransmissionClient *Trs
-	SlackClient        Notification
-)
-
-func init() {
-	TransmissionClient = &Trs{}
-	SlackClient = &SlackNotification{}
-}
-
 func download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []string) {
 	var (
 		episodesAdded []Episode
@@ -52,14 +42,6 @@ func download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []strin
 		}
 	}
 
-	if len(episodesAdded) > 0 {
-		notify(episodesAdded)
-		Logger.Info().
-			Str("action", "downloaded").
-			Int("count", len(episodesAdded)).
-			Msg("Downloaded episodes")
-	}
-
 	if len(errs) > 0 {
 		Logger.Warn().
 			Str("action", "download error").
@@ -68,17 +50,6 @@ func download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []strin
 	}
 
 	return episodesAdded, errs
-}
-
-func notify(episodes []Episode) {
-	title := "TransmissionRSS: New episode(s)"
-	body := "Added episodes:"
-
-	for _, episode := range episodes {
-		body += "\n" + episode.Title
-	}
-
-	SlackClient.Send(title, body)
 }
 
 func processEpisode(
