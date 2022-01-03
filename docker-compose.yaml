@@ -5,8 +5,8 @@ services:
       - .env
     ports:
       - 13306:3306
-    volumes:
-      - mysql_data:/var/lib/mysql
+    # volumes:
+    #   - mysql_data:/var/lib/mysql
   transmission:
     image: ghcr.io/linuxserver/transmission
     environment:
@@ -20,13 +20,13 @@ services:
       - 51413:51413
       - 51413:51413/udp
     restart: unless-stopped
-    
+
   # app:
   #   build: .
   #   ports:
   #     - 8080:8080
   #   volumes:
-  #     - ./.env:/app/.env
+  #     - ./.env.in-docker:/app/.env
 
 volumes:
   mysql_data:
