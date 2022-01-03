@@ -2,21 +2,19 @@ package transmissionrss
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
-	"gorm.io/gorm"
 )
 
 var (
-	DbConnection *gorm.DB
+	episodeHandler Episodes
 )
 
 func NewApi() *Api {
-	DbConnection = new(DB).getConnection()
+	episodeHandler = NewEpisodeHanlder()
 
 	return new(Api)
 }
@@ -35,8 +33,13 @@ func (a *Api) Feeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Api) Episodes(w http.ResponseWriter, r *http.Request) {
-	episodes := []Episode{}
-	DbConnection.Find(&episodes)
+	episodes, err := episodeHandler.All()
+
+	if err != nil {
+		w.WriteHeader(500)
+		io.WriteString(w, "{\"error\": \"Could not read episodes\"}")
+		return
+	}
 
 	json.NewEncoder(w).Encode(episodes)
 }
@@ -60,7 +63,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloaded, errs := download(feedItems, dbConnection)
+	downloaded, errs := download(feedItems, episodeHandler)
 
 	type Response struct {
 		Errors   []string
@@ -70,10 +73,6 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	response := Response{
 		Errors:   errs,
 		Episodes: downloaded,
-	}
-
-	if len(errs) != 0 {
-		fmt.Printf("Failed to add episodes: %v", errs)
 	}
 
 	json.NewEncoder(w).Encode(response)

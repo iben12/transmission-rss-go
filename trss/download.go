@@ -2,7 +2,7 @@ package transmissionrss
 
 import (
 	"errors"
-	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -16,7 +16,7 @@ func init() {
 	SlackClient = new(SlackNotification)
 }
 
-func download(feedItems []FeedItem, db *gorm.DB) ([]Episode, []string) {
+func download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []string) {
 	var (
 		episodesAdded []Episode
 		errs          []string
@@ -25,13 +25,13 @@ func download(feedItems []FeedItem, db *gorm.DB) ([]Episode, []string) {
 	)
 
 	for _, feedItem := range feedItems {
-		episode := Episode{}
-		result := db.Where(&Episode{ShowId: feedItem.ShowId, EpisodeId: feedItem.EpisodeId}).First(&episode)
+		episodeToFind := &Episode{ShowId: feedItem.ShowId, EpisodeId: feedItem.EpisodeId}
+		_, err := episodeHandler.FindEpisode(episodeToFind)
 
-		if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 			resultChan := make(chan Episode, 1)
 			errChan := make(chan error, 1)
-			go processEpisode(feedItem, resultChan, errChan, db)
+			go processEpisode(feedItem, resultChan, errChan, episodeHandler)
 
 			errorChans = append(errorChans, errChan)
 			resultChans = append(resultChans, resultChan)
@@ -54,9 +54,18 @@ func download(feedItems []FeedItem, db *gorm.DB) ([]Episode, []string) {
 
 	if len(episodesAdded) > 0 {
 		notify(episodesAdded)
+		Logger.Info().
+			Str("action", "downloaded").
+			Int("count", len(episodesAdded)).
+			Msg("Downloaded episodes")
 	}
 
-	fmt.Println(errs)
+	if len(errs) > 0 {
+		Logger.Warn().
+			Str("action", "download error").
+			Strs("errors", errs).
+			Msg("Download errors")
+	}
 
 	return episodesAdded, errs
 }
@@ -76,7 +85,7 @@ func processEpisode(
 	feedItem FeedItem,
 	result chan Episode,
 	err chan error,
-	db *gorm.DB,
+	episodeHandler Episodes,
 ) {
 	defer close(result)
 	defer close(err)
@@ -90,15 +99,15 @@ func processEpisode(
 		Link:      feedItem.Link,
 	}
 
-	transmissionError := TransmissionClient.AddDownload(episode)
+	transmissionError := episodeHandler.DownloadEpisode(episode)
 
 	if transmissionError == nil {
-		saved := db.Create(&episode)
+		dbError := episodeHandler.AddEpisode(&episode)
 
-		if saved.Error == nil {
+		if dbError == nil {
 			result <- episode
 		} else {
-			err <- saved.Error
+			err <- dbError
 		}
 	} else {
 		err <- transmissionError

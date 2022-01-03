@@ -21,11 +21,15 @@ func (d *DB) getConnection() (db *gorm.DB) {
 	if dbConnection == nil {
 		once.Do(
 			func() {
-				fmt.Println("Creating new DB connection")
+				Logger.Info().
+					Str("action", "DB connect").
+					Msg("Creating new DB connection")
 				dbConnection = d.connect()
 			})
 	} else {
-		fmt.Println("DB is already connected")
+		Logger.Info().
+			Str("action", "DB connect").
+			Msg("DB is already connected")
 	}
 
 	return dbConnection
