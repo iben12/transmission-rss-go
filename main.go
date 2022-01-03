@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/iben12/transmission-rss-go/trss"
-	"log"
-	"net/http"
 )
 
 func handleRequests() {
@@ -21,11 +20,14 @@ func handleRequests() {
 	router.HandleFunc("/api/cleanup", api.Clean)
 	router.PathPrefix("/").Handler(static)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	err := http.ListenAndServe(":8080", router)
+	transmissionrss.Logger.Fatal().Err(err)
 }
 
 func main() {
+	transmissionrss.Logger.Info().
+		Str("action", "start server").
+		Msg("Server starting")
 
-	fmt.Println("Server starting")
 	handleRequests()
 }
