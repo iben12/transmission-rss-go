@@ -22,7 +22,7 @@ type EpisodeHandler interface {
 
 type Episodes struct {
 	db           *gorm.DB
-	transmission *Trs
+	transmission TransmissionService
 }
 
 func (h *Episodes) AddEpisode(episode *Episode) error {
@@ -51,6 +51,6 @@ func (h *Episodes) DownloadEpisode(episode Episode) error {
 
 func NewEpisodes() EpisodeHandler {
 	dbConnection := new(DB).getConnection()
-	transmissionClient := &Trs{}
+	transmissionClient := NewTrs()
 	return &Episodes{db: dbConnection, transmission: transmissionClient}
 }

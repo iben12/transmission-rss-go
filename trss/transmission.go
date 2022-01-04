@@ -43,14 +43,21 @@ func NewTrs() TransmissionService {
 func (trs *Trs) CheckVersion() bool {
 	ok, serverVersion, serverMinimumVersion, err := trs.client.RPCVersion()
 	if err != nil {
-		panic(err)
+		Logger.Error().
+			Str("action", "transmission check version").
+			Err(err).Msg("")
 	}
 	if !ok {
-		panic(fmt.Sprintf("Remote transmission RPC version (v%d) is incompatible with the transmission library (v%d): remote needs at least v%d",
-			serverVersion, transmissionrpc.RPCVersion, serverMinimumVersion))
+		Logger.Fatal().
+			Str("action", "transmission check version").
+			Err(fmt.Errorf("remote transmission RPC version (v%d) is incompatible with the transmission library (v%d): remote needs at least v%d",
+				serverVersion, transmissionrpc.RPCVersion, serverMinimumVersion))
 	}
-	fmt.Printf("Remote transmission RPC version (v%d) is compatible with our transmissionrpc library (v%d)\n",
-		serverVersion, transmissionrpc.RPCVersion)
+
+	Logger.Info().
+		Str("action", "transmission check version").
+		Msg(fmt.Sprintf("Remote transmission RPC version (v%d) is compatible with our transmissionrpc library (v%d)",
+			serverVersion, transmissionrpc.RPCVersion))
 
 	return true
 }
@@ -71,7 +78,7 @@ func (trs *Trs) CleanFinished() ([]string, error) {
 	if err != nil {
 		Logger.Error().
 			Str("action", "remove torrents").
-			Err(err)
+			Err(err).Msg("")
 	}
 
 	return titles, err

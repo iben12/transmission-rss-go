@@ -37,10 +37,9 @@ func TestApi(t *testing.T) {
 		res := w.Result()
 
 		defer res.Body.Close()
-		data, err := ioutil.ReadAll(res.Body)
+		data, _ := ioutil.ReadAll(res.Body)
 
 		expectedResponse := fmt.Sprintf("[{\"name\":\"ShowRSS\",\"url\":\"%v\"}]\n", rssAddress)
-		assert.Nil(err)
 		assert.Equal(expectedResponse, string(data))
 	})
 

@@ -29,7 +29,7 @@ func (f *Feeds) FetchItems(rssAddress string) ([]FeedItem, error) {
 		Logger.Error().
 			Str("action", "fetch feed").
 			Str("url", rssAddress).
-			Err(err)
+			Err(err).Msg("")
 
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (f *Feeds) FetchItems(rssAddress string) ([]FeedItem, error) {
 	if parseError != nil {
 		Logger.Error().
 			Str("action", "parse feed").
-			Err(parseError)
+			Err(parseError).Msg("")
 
 		return nil, errors.New("cannot parse XML")
 	}

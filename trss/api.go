@@ -20,6 +20,8 @@ func NewApi() *Api {
 	FeedService = NewFeeds()
 	TrsService = NewTrs()
 
+	TrsService.CheckVersion()
+
 	return new(Api)
 }
 
@@ -62,7 +64,12 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	downloaded, errs := Download(feedItems, EpisodeService)
 
 	if len(downloaded) > 0 {
-		notify(downloaded)
+		titles := []string{}
+		for _, episode := range downloaded {
+			titles = append(titles, episode.Title)
+		}
+		notify("Added", titles)
+
 		Logger.Info().
 			Str("action", "downloaded").
 			Int("count", len(downloaded)).
@@ -92,28 +99,19 @@ func (a *Api) Clean(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(titles) > 0 {
-		title := "TransmissionRSS: Removed episode(s)"
-		body := "Removed episodes:"
-
-		for _, episode := range titles {
-			body += "\n" + episode
-		}
-
-		slackNotification := new(SlackNotification)
-
-		slackNotification.Send(title, body)
+		notify("Removed", titles)
 	}
 
 	json.NewEncoder(w).Encode(titles)
 }
 
-func notify(episodes []Episode) {
+func notify(action string, titles []string) {
 	SlackClient := &SlackNotification{}
-	title := "TransmissionRSS: New episode(s)"
-	body := "Added episodes:"
+	title := "TransmissionRSS: " + action + " episode(s)"
+	body := "Episodes:"
 
-	for _, episode := range episodes {
-		body += "\n" + episode.Title
+	for _, title := range titles {
+		body += "\n" + title
 	}
 
 	SlackClient.Send(title, body)
