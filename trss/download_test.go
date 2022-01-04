@@ -2,15 +2,16 @@ package transmissionrss_test
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/iben12/transmission-rss-go/tests/mocks"
 	trss "github.com/iben12/transmission-rss-go/trss"
+	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
 func TestDownload(t *testing.T) {
+	assert := assert.New(t)
 	mockHandler := &mocks.MockEpisodeHandler{}
 
 	t.Run("Episodes download", func(t *testing.T) {
@@ -40,13 +41,8 @@ func TestDownload(t *testing.T) {
 		downloaded, _ := trss.Download(feedItems, mockHandler)
 
 		expectedLength := 1
-		if len(downloaded) != expectedLength {
-			t.Errorf("Expected %v items, but got %v", expectedLength, len(downloaded))
-		}
-
-		if downloaded[0].EpisodeId != expectedEpisodeId {
-			t.Errorf("Expected EpisodeID to be %v, but got %v", expectedEpisodeId, downloaded[0].EpisodeId)
-		}
+		assert.Equal(len(downloaded), expectedLength)
+		assert.Equal(downloaded[0].EpisodeId, expectedEpisodeId)
 	})
 
 	t.Run("Episodes fail", func(t *testing.T) {
@@ -82,14 +78,10 @@ func TestDownload(t *testing.T) {
 		downloaded, errs := trss.Download(feedItems, mockHandler)
 
 		expectedLength := 0
-		if len(downloaded) != expectedLength {
-			t.Errorf("Expected %v items, but got %v", expectedLength, len(downloaded))
-		}
+		assert.Equal(len(downloaded), expectedLength)
 
 		expectedErrors := []string{transmissionError.Error(), dbError.Error()}
 
-		if !reflect.DeepEqual(expectedErrors, errs) {
-			t.Errorf("Expected errors do not match actual %v %v", expectedErrors, errs)
-		}
+		assert.Equal(errs, expectedErrors)
 	})
 }

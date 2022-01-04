@@ -48,16 +48,10 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	rssAddress := os.Getenv("RSS_FEED_ADDRESS")
 
 	feed := new(Feed)
-	// xml, err1 := feed.fetchRss(rssAddress)
-	// if err1 != nil {
-	// 	w.WriteHeader(500)
-	// 	io.WriteString(w, "{\"error\": \"Could not fetch feed\"}")
-	// 	return
-	// }
 
-	feedItems, err2 := feed.FetchItems(rssAddress)
+	feedItems, fetchError := feed.FetchItems(rssAddress)
 
-	if err2 != nil {
+	if fetchError != nil {
 		w.WriteHeader(500)
 		io.WriteString(w, "{\"error\": \"Could not parse feed\"}")
 		return

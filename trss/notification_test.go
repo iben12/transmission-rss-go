@@ -9,16 +9,18 @@ import (
 
 	"github.com/iben12/transmission-rss-go/tests/mocks"
 	"github.com/iben12/transmission-rss-go/trss"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNotification(t *testing.T) {
+	assert := assert.New(t)
 	os.Setenv("SLACK_URL", "https://hooks.slack.com/services/testurl")
 	transmissionrss.HttpClient = &mocks.MockHttpClient{}
 
 	t.Run("Notification gets through", func(t *testing.T) {
 		response := ioutil.NopCloser(bytes.NewReader([]byte("ok")))
 		var requestBody []byte
-		mocks.GetHttpDoFunc = func(req *http.Request) (*http.Response, error) {
+		mocks.MockHttpDo = func(req *http.Request) (*http.Response, error) {
 			defer req.Body.Close()
 			requestBody, _ = ioutil.ReadAll(req.Body)
 			return &http.Response{
@@ -30,19 +32,15 @@ func TestNotification(t *testing.T) {
 		notification := new(transmissionrss.SlackNotification)
 		err := notification.Send("hello", "bello")
 
-		if err != nil {
-			t.Error("Expected no error, but got:", err)
-		}
+		assert.Nil(err)
 
-		if string(requestBody) != `{"channel":"","text":"hello","blocks":[{"type":"section","text":{"text":":arrow_up_down: *hello*\nbello","type":"mrkdwn"}}]}` {
-			t.Error("Request body does not match expected")
-		}
+		assert.Equal(string(requestBody), `{"channel":"","text":"hello","blocks":[{"type":"section","text":{"text":":arrow_up_down: *hello*\nbello","type":"mrkdwn"}}]}`)
 	})
 
 	t.Run("Notification fails", func(t *testing.T) {
 		errorMessage := "invalid payload"
 		response := ioutil.NopCloser(bytes.NewReader([]byte(errorMessage)))
-		mocks.GetHttpDoFunc = func(*http.Request) (*http.Response, error) {
+		mocks.MockHttpDo = func(*http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 400,
 				Body:       response,
@@ -52,12 +50,8 @@ func TestNotification(t *testing.T) {
 		notification := new(transmissionrss.SlackNotification)
 		err := notification.Send("hello", "bello")
 
-		if err == nil {
-			t.Error("Expected error, but got nil")
-		}
-
-		if err.Error() != errorMessage {
-			t.Errorf("Expected error '%s', but got '%s'", errorMessage, err.Error())
+		if assert.Error(err) {
+			assert.Equal(err.Error(), errorMessage)
 		}
 	})
 

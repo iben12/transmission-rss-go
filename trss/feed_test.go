@@ -8,17 +8,19 @@ import (
 
 	"github.com/iben12/transmission-rss-go/tests/mocks"
 	"github.com/iben12/transmission-rss-go/trss"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFeedParse(t *testing.T) {
+	assert := assert.New(t)
 	transmissionrss.HttpClient = &mocks.MockHttpClient{}
 	rssAddress := "https://rss.feed/url"
 
 	t.Run("Valid XML", func(t *testing.T) {
 		response := ioutil.NopCloser(bytes.NewReader([]byte(validXml)))
-		var host string
-		mocks.GetHttpDoFunc = func(req *http.Request) (*http.Response, error) {
-			host = req.URL.String()
+		var url string
+		mocks.MockHttpDo = func(req *http.Request) (*http.Response, error) {
+			url = req.URL.String()
 			return &http.Response{
 				StatusCode: 200,
 				Body:       response,
@@ -31,22 +33,14 @@ func TestFeedParse(t *testing.T) {
 
 		expectedLength := 1
 
-		if host != rssAddress {
-			t.Errorf("Expected host %s but got: %s", rssAddress, host)
-		}
-
-		if len(items) != expectedLength {
-			t.Errorf("Expected length to be %d, got %d", expectedLength, len(items))
-		}
-
-		if items[0].ShowTitle != "Million Dollar Listing: Los Angeles" {
-			t.Errorf("Expected ShowTitle to be 'Million Dollar Listing: Los Angeles' got %s", items[0].ShowTitle)
-		}
+		assert.Equal(url, rssAddress)
+		assert.Equal(len(items), expectedLength)
+		assert.Equal(items[0].ShowTitle, "Million Dollar Listing: Los Angeles")
 	})
 
 	t.Run("Invalid XML", func(t *testing.T) {
 		response := ioutil.NopCloser(bytes.NewReader([]byte(invalidXml)))
-		mocks.GetHttpDoFunc = func(req *http.Request) (*http.Response, error) {
+		mocks.MockHttpDo = func(req *http.Request) (*http.Response, error) {
 			return &http.Response{
 				StatusCode: 200,
 				Body:       response,
@@ -55,10 +49,10 @@ func TestFeedParse(t *testing.T) {
 
 		feed := new(transmissionrss.Feed)
 
-		items, err := feed.FetchItems(invalidXml)
+		_, err := feed.FetchItems(invalidXml)
 
-		if err == nil {
-			t.Errorf("Expected error, but got %d", len(items))
+		if assert.Error(err) {
+			assert.Equal(err.Error(), "cannot parse XML")
 		}
 	})
 
