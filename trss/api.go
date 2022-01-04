@@ -63,7 +63,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloaded, errs := download(feedItems, episodeHandler)
+	downloaded, errs := Download(feedItems, episodeHandler)
 
 	if len(downloaded) > 0 {
 		notify(downloaded)

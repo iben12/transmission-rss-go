@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []string) {
+func Download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []string) {
 	var (
 		episodesAdded []Episode
 		errs          []string
