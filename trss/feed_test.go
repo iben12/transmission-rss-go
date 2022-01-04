@@ -1,55 +1,48 @@
 package transmissionrss_test
 
 import (
-	"bytes"
-	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"github.com/iben12/transmission-rss-go/tests/mocks"
 	"github.com/iben12/transmission-rss-go/trss"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFeedParse(t *testing.T) {
 	assert := assert.New(t)
-	transmissionrss.HttpClient = &mocks.MockHttpClient{}
-	rssAddress := "https://rss.feed/url"
 
 	t.Run("Valid XML", func(t *testing.T) {
-		response := ioutil.NopCloser(bytes.NewReader([]byte(validXml)))
-		var url string
-		mocks.MockHttpDo = func(req *http.Request) (*http.Response, error) {
-			url = req.URL.String()
-			return &http.Response{
-				StatusCode: 200,
-				Body:       response,
-			}, nil
-		}
+		url := "/feed/1234"
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			assert.Equal(url, req.URL.String())
+			rw.Write([]byte(validXml))
+		}))
+
+		defer server.Close()
 
 		feed := new(transmissionrss.Feed)
+
+		rssAddress := server.URL + url
 
 		items, _ := feed.FetchItems(rssAddress)
 
 		expectedLength := 1
 
-		assert.Equal(url, rssAddress)
 		assert.Equal(len(items), expectedLength)
 		assert.Equal(items[0].ShowTitle, "Million Dollar Listing: Los Angeles")
 	})
 
 	t.Run("Invalid XML", func(t *testing.T) {
-		response := ioutil.NopCloser(bytes.NewReader([]byte(invalidXml)))
-		mocks.MockHttpDo = func(req *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: 200,
-				Body:       response,
-			}, nil
-		}
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.Write([]byte(invalidXml))
+		}))
+
+		defer server.Close()
 
 		feed := new(transmissionrss.Feed)
 
-		_, err := feed.FetchItems(invalidXml)
+		_, err := feed.FetchItems(server.URL)
 
 		if assert.Error(err) {
 			assert.Equal(err.Error(), "cannot parse XML")

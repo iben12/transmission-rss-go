@@ -56,9 +56,7 @@ func (f *Feed) FetchItems(rssAddress string) (items []FeedItem, err error) {
 }
 
 func (f *Feed) fetchRss(rssAddress string) (string, error) {
-	request, _ := http.NewRequest(http.MethodGet, rssAddress, nil)
-
-	resp, err := HttpClient.Do(request)
+	resp, err := http.Get(rssAddress)
 
 	if err != nil {
 		return "", err

@@ -39,13 +39,12 @@ func (s *SlackNotification) Send(title string, body string) error {
 	payload := s.renderPayload(title, body)
 	json, _ := json.Marshal(payload)
 
-	request, _ := http.NewRequest(http.MethodPost, os.Getenv("SLACK_URL"), bytes.NewBuffer(json))
-
-	resp, err := HttpClient.Do(request)
+	resp, err := http.Post(os.Getenv("SLACK_URL"), "application/json", bytes.NewBuffer(json))
 
 	if err != nil {
 		return err
 	}
+
 	defer resp.Body.Close()
 	respBytes, _ := ioutil.ReadAll(resp.Body)
 
