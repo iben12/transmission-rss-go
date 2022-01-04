@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	episodeHandler Episodes
+	episodes EpisodeHandler
 )
 
 func NewApi() *Api {
-	episodeHandler = NewEpisodeHanlder()
+	episodes = NewEpisodeHanlder()
 
 	return new(Api)
 }
@@ -33,7 +33,7 @@ func (a *Api) Feeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Api) Episodes(w http.ResponseWriter, r *http.Request) {
-	episodes, err := episodeHandler.All()
+	episodeList, err := episodes.All()
 
 	if err != nil {
 		w.WriteHeader(500)
@@ -41,7 +41,7 @@ func (a *Api) Episodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(episodes)
+	json.NewEncoder(w).Encode(episodeList)
 }
 
 func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloaded, errs := Download(feedItems, episodeHandler)
+	downloaded, errs := Download(feedItems, episodes)
 
 	if len(downloaded) > 0 {
 		notify(downloaded)

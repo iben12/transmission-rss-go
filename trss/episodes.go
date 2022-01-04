@@ -13,31 +13,31 @@ type Episode struct {
 	Link      string `json:"link"`
 }
 
-type Episodes interface {
+type EpisodeHandler interface {
 	AddEpisode(episode *Episode) error
 	FindEpisode(episode *Episode) (Episode, error)
 	All() ([]Episode, error)
 	DownloadEpisode(episode Episode) error
 }
 
-type EpisodeHandler struct {
+type Episodes struct {
 	db           *gorm.DB
 	transmission *Trs
 }
 
-func (h *EpisodeHandler) AddEpisode(episode *Episode) error {
+func (h *Episodes) AddEpisode(episode *Episode) error {
 	result := h.db.Create(&episode)
 	return result.Error
 }
 
-func (h *EpisodeHandler) FindEpisode(episodeToFind *Episode) (Episode, error) {
+func (h *Episodes) FindEpisode(episodeToFind *Episode) (Episode, error) {
 	episode := Episode{}
 	result := h.db.Where(episodeToFind).First(&episode)
 
 	return episode, result.Error
 }
 
-func (h *EpisodeHandler) All() ([]Episode, error) {
+func (h *Episodes) All() ([]Episode, error) {
 	episodes := []Episode{}
 
 	result := h.db.Find(&episodes)
@@ -45,12 +45,12 @@ func (h *EpisodeHandler) All() ([]Episode, error) {
 	return episodes, result.Error
 }
 
-func (h *EpisodeHandler) DownloadEpisode(episode Episode) error {
+func (h *Episodes) DownloadEpisode(episode Episode) error {
 	return h.transmission.AddDownload(episode)
 }
 
-func NewEpisodeHanlder() Episodes {
+func NewEpisodeHanlder() EpisodeHandler {
 	dbConnection := new(DB).getConnection()
 	transmissionClient := &Trs{}
-	return &EpisodeHandler{db: dbConnection, transmission: transmissionClient}
+	return &Episodes{db: dbConnection, transmission: transmissionClient}
 }

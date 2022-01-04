@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []string) {
+func Download(feedItems []FeedItem, episodes EpisodeHandler) ([]Episode, []string) {
 	var (
 		episodesAdded []Episode
 		errs          []string
@@ -16,12 +16,12 @@ func Download(feedItems []FeedItem, episodeHandler Episodes) ([]Episode, []strin
 
 	for _, feedItem := range feedItems {
 		episodeToFind := &Episode{ShowId: feedItem.ShowId, EpisodeId: feedItem.EpisodeId}
-		_, err := episodeHandler.FindEpisode(episodeToFind)
+		_, err := episodes.FindEpisode(episodeToFind)
 
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 			resultChan := make(chan Episode, 1)
 			errChan := make(chan error, 1)
-			go processEpisode(feedItem, resultChan, errChan, episodeHandler)
+			go processEpisode(feedItem, resultChan, errChan, episodes)
 
 			errorChans = append(errorChans, errChan)
 			resultChans = append(resultChans, resultChan)
@@ -56,7 +56,7 @@ func processEpisode(
 	feedItem FeedItem,
 	result chan Episode,
 	err chan error,
-	episodeHandler Episodes,
+	episodeHandler EpisodeHandler,
 ) {
 	defer close(result)
 	defer close(err)

@@ -12,7 +12,7 @@ import (
 
 func TestDownload(t *testing.T) {
 	assert := assert.New(t)
-	mockHandler := &mocks.MockEpisodeHandler{}
+	mockEpisodes := &mocks.MockEpisodes{}
 
 	t.Run("Episodes download", func(t *testing.T) {
 		expectedEpisodeId := "22"
@@ -21,7 +21,7 @@ func TestDownload(t *testing.T) {
 			{ShowId: "2", EpisodeId: expectedEpisodeId},
 		}
 
-		mockHandler.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
+		mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
 			if e.ShowId == "1" {
 				return *e, nil // episode exists
 			} else {
@@ -29,16 +29,16 @@ func TestDownload(t *testing.T) {
 			}
 		}
 
-		mockHandler.MockDownloadEpisode = func(e trss.Episode) error {
+		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
 			return nil
 		}
 
-		mockHandler.MockAddEpisode = func(e *trss.Episode) error {
+		mockEpisodes.MockAddEpisode = func(e *trss.Episode) error {
 			e.ID = 2
 			return nil
 		}
 
-		downloaded, _ := trss.Download(feedItems, mockHandler)
+		downloaded, _ := trss.Download(feedItems, mockEpisodes)
 
 		expectedLength := 1
 		assert.Equal(len(downloaded), expectedLength)
@@ -52,13 +52,13 @@ func TestDownload(t *testing.T) {
 			{ShowId: "2", EpisodeId: expectedEpisodeId},
 		}
 
-		mockHandler.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
+		mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
 			return trss.Episode{}, gorm.ErrRecordNotFound // episode does not exist
 		}
 
 		transmissionError := errors.New("Transmission error")
 
-		mockHandler.MockDownloadEpisode = func(e trss.Episode) error {
+		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
 			if e.ShowId == "1" {
 				return transmissionError
 			}
@@ -67,7 +67,7 @@ func TestDownload(t *testing.T) {
 
 		dbError := errors.New("Database error")
 
-		mockHandler.MockAddEpisode = func(e *trss.Episode) error {
+		mockEpisodes.MockAddEpisode = func(e *trss.Episode) error {
 			if e.ShowId == "2" {
 				return dbError
 			}
@@ -75,7 +75,7 @@ func TestDownload(t *testing.T) {
 			return nil
 		}
 
-		downloaded, errs := trss.Download(feedItems, mockHandler)
+		downloaded, errs := trss.Download(feedItems, mockEpisodes)
 
 		expectedLength := 0
 		assert.Equal(len(downloaded), expectedLength)
