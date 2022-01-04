@@ -13,6 +13,7 @@ import (
 	"github.com/iben12/transmission-rss-go/tests/mocks"
 	trss "github.com/iben12/transmission-rss-go/trss"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
 func TestApi(t *testing.T) {
@@ -43,7 +44,7 @@ func TestApi(t *testing.T) {
 
 	t.Run("Episodes endpoint", func(t *testing.T) {
 		episodes := []trss.Episode{
-			{ShowId: "1", EpisodeId: "2", Title: "From test", ShowTitle: "Testdriver"},
+			mocks.EpisodeExample,
 		}
 
 		mockEpisodes.MockAll = func() ([]trss.Episode, error) {
@@ -59,7 +60,7 @@ func TestApi(t *testing.T) {
 		res := w.Result()
 
 		defer res.Body.Close()
-		data, err := ioutil.ReadAll(res.Body)
+		data, _ := ioutil.ReadAll(res.Body)
 
 		var resultData []trss.Episode
 		jsonErr := json.Unmarshal(data, &resultData)
@@ -68,7 +69,6 @@ func TestApi(t *testing.T) {
 			t.Error(jsonErr)
 		}
 
-		assert.Nil(err)
 		assert.Equal(episodes, resultData)
 	})
 
@@ -90,7 +90,7 @@ func TestApi(t *testing.T) {
 		assert.Equal(500, res.StatusCode)
 
 		defer res.Body.Close()
-		data, err := ioutil.ReadAll(res.Body)
+		data, _ := ioutil.ReadAll(res.Body)
 
 		var resultData map[string]string
 		jsonErr := json.Unmarshal(data, &resultData)
@@ -101,7 +101,106 @@ func TestApi(t *testing.T) {
 
 		expectedResponse := map[string]string{"error": "Could not read episodes"}
 
-		assert.Nil(err)
 		assert.Equal(expectedResponse, resultData)
+	})
+
+	t.Run("Download endpoint", func(t *testing.T) {
+		mockFeeds.MockFetchItems = func(r string) ([]trss.FeedItem, error) {
+			feedItems := []trss.FeedItem{mocks.FeedItemExample}
+
+			return feedItems, nil
+		}
+
+		mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
+			return trss.Episode{}, gorm.ErrRecordNotFound
+		}
+
+		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
+			return nil
+		}
+
+		mockEpisodes.MockAddEpisode = func(e *trss.Episode) error {
+			e.ID = 2
+			return nil
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		w := httptest.NewRecorder()
+		api := new(trss.Api)
+
+		api.Download(w, req)
+
+		res := w.Result()
+
+		assert.Equal(200, res.StatusCode)
+
+		defer res.Body.Close()
+		data, _ := ioutil.ReadAll(res.Body)
+
+		type ResponseType struct {
+			Episodes []trss.Episode
+			Errors   []string
+		}
+
+		expectedEpisode := mocks.EpisodeExample
+		expectedEpisode.ID = 2
+		expectedEpisodes := []trss.Episode{expectedEpisode}
+		expectedErrors := []string(nil)
+
+		responseData := &ResponseType{}
+
+		json.Unmarshal(data, responseData)
+
+		assert.Equal(expectedEpisodes, responseData.Episodes)
+		assert.Equal(expectedErrors, responseData.Errors)
+	})
+
+	t.Run("Download endpoint fail", func(t *testing.T) {
+		mockFeeds.MockFetchItems = func(r string) ([]trss.FeedItem, error) {
+			feedItems := []trss.FeedItem{mocks.FeedItemExample}
+
+			return feedItems, nil
+		}
+
+		mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
+			return trss.Episode{}, gorm.ErrRecordNotFound
+		}
+
+		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
+			return errors.New("Transmission error")
+		}
+
+		mockEpisodes.MockAddEpisode = func(e *trss.Episode) error {
+			e.ID = 2
+			return nil
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		w := httptest.NewRecorder()
+		api := new(trss.Api)
+
+		api.Download(w, req)
+
+		res := w.Result()
+
+		assert.Equal(200, res.StatusCode)
+
+		defer res.Body.Close()
+		data, _ := ioutil.ReadAll(res.Body)
+
+		type ResponseType struct {
+			Episodes []trss.Episode
+			Errors   []string
+		}
+
+		expectedEpisodes := []trss.Episode(nil)
+		expectedErrors := []string{"Transmission error"}
+
+		responseData := &ResponseType{}
+
+		json.Unmarshal(data, responseData)
+
+		assert.Equal(expectedEpisodes, responseData.Episodes)
+		assert.Equal(expectedErrors, responseData.Errors)
 	})
 }

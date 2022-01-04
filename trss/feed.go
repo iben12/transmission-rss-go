@@ -17,12 +17,12 @@ type FeedItem struct {
 }
 
 type FeedHandler interface {
-	FetchItems(r string) (items []FeedItem, err error)
+	FetchItems(r string) ([]FeedItem, error)
 }
 
 type Feeds struct{}
 
-func (f *Feeds) FetchItems(rssAddress string) (items []FeedItem, err error) {
+func (f *Feeds) FetchItems(rssAddress string) ([]FeedItem, error) {
 	xml, err := f.fetchRss(rssAddress)
 
 	if err != nil {
