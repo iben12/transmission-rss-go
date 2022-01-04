@@ -49,7 +49,7 @@ func (h *Episodes) DownloadEpisode(episode Episode) error {
 	return h.transmission.AddDownload(episode)
 }
 
-func NewEpisodeHanlder() EpisodeHandler {
+func NewEpisodes() EpisodeHandler {
 	dbConnection := new(DB).getConnection()
 	transmissionClient := &Trs{}
 	return &Episodes{db: dbConnection, transmission: transmissionClient}

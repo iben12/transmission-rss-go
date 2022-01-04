@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-type Feed struct{}
-
 type FeedItem struct {
 	Title     string
 	ShowTitle string
@@ -18,7 +16,13 @@ type FeedItem struct {
 	Link      string
 }
 
-func (f *Feed) FetchItems(rssAddress string) (items []FeedItem, err error) {
+type FeedHandler interface {
+	FetchItems(r string) (items []FeedItem, err error)
+}
+
+type Feeds struct{}
+
+func (f *Feeds) FetchItems(rssAddress string) (items []FeedItem, err error) {
 	xml, err := f.fetchRss(rssAddress)
 
 	if err != nil {
@@ -55,7 +59,7 @@ func (f *Feed) FetchItems(rssAddress string) (items []FeedItem, err error) {
 	return feedItems, nil
 }
 
-func (f *Feed) fetchRss(rssAddress string) (string, error) {
+func (f *Feeds) fetchRss(rssAddress string) (string, error) {
 	resp, err := http.Get(rssAddress)
 
 	if err != nil {
@@ -67,4 +71,8 @@ func (f *Feed) fetchRss(rssAddress string) (string, error) {
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	return string(body), nil
+}
+
+func NewFeeds() FeedHandler {
+	return new(Feeds)
 }

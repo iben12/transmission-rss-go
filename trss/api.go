@@ -10,11 +10,13 @@ import (
 )
 
 var (
-	episodes EpisodeHandler
+	EpisodeService EpisodeHandler
+	FeedService    FeedHandler
 )
 
 func NewApi() *Api {
-	episodes = NewEpisodeHanlder()
+	EpisodeService = NewEpisodes()
+	FeedService = NewFeeds()
 
 	return new(Api)
 }
@@ -33,7 +35,7 @@ func (a *Api) Feeds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Api) Episodes(w http.ResponseWriter, r *http.Request) {
-	episodeList, err := episodes.All()
+	episodeList, err := EpisodeService.All()
 
 	if err != nil {
 		w.WriteHeader(500)
@@ -47,9 +49,7 @@ func (a *Api) Episodes(w http.ResponseWriter, r *http.Request) {
 func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 	rssAddress := os.Getenv("RSS_FEED_ADDRESS")
 
-	feed := new(Feed)
-
-	feedItems, fetchError := feed.FetchItems(rssAddress)
+	feedItems, fetchError := FeedService.FetchItems(rssAddress)
 
 	if fetchError != nil {
 		w.WriteHeader(500)
@@ -57,7 +57,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloaded, errs := Download(feedItems, episodes)
+	downloaded, errs := Download(feedItems, EpisodeService)
 
 	if len(downloaded) > 0 {
 		notify(downloaded)

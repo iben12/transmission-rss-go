@@ -21,7 +21,7 @@ func TestFeedParse(t *testing.T) {
 
 		defer server.Close()
 
-		feed := new(transmissionrss.Feed)
+		feed := new(transmissionrss.Feeds)
 
 		rssAddress := server.URL + url
 
@@ -40,7 +40,7 @@ func TestFeedParse(t *testing.T) {
 
 		defer server.Close()
 
-		feed := new(transmissionrss.Feed)
+		feed := new(transmissionrss.Feeds)
 
 		_, err := feed.FetchItems(server.URL)
 
