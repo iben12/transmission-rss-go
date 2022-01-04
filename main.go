@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -14,6 +15,10 @@ func handleRequests() {
 
 	api := transmissionrss.NewApi()
 
+	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "{\"status\": \"OK\"}")
+	})
 	router.HandleFunc("/api/feeds", api.Feeds)
 	router.HandleFunc("/api/episodes", api.Episodes)
 	router.HandleFunc("/api/download", api.Download)
