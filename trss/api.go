@@ -12,11 +12,13 @@ import (
 var (
 	EpisodeService EpisodeHandler
 	FeedService    FeedHandler
+	TrsService     TransmissionService
 )
 
 func NewApi() *Api {
 	EpisodeService = NewEpisodes()
 	FeedService = NewFeeds()
+	TrsService = NewTrs()
 
 	return new(Api)
 }
@@ -81,19 +83,15 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Api) Clean(w http.ResponseWriter, r *http.Request) {
-	trs := new(Trs)
+	titles, err := TrsService.CleanFinished()
 
-	ids, titles := trs.getFinished()
+	if err != nil {
+		w.WriteHeader(500)
+		io.WriteString(w, "{\"error\": \"Could not remove torrents\"}")
+		return
+	}
 
-	if len(ids) > 0 {
-		err := trs.remove(ids)
-
-		if err != nil {
-			w.WriteHeader(500)
-			io.WriteString(w, "{\"error\": \"Could not remove torrents\"}")
-			return
-		}
-
+	if len(titles) > 0 {
 		title := "TransmissionRSS: Removed episode(s)"
 		body := "Removed episodes:"
 

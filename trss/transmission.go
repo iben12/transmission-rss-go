@@ -9,13 +9,19 @@ import (
 	"github.com/hekmon/transmissionrpc"
 )
 
-type Trs struct{}
+type TransmissionService interface {
+	CheckVersion() bool
+	AddTorrent(e Episode) error
+	CleanFinished() ([]string, error)
+}
 
-var client transmissionrpc.Client
+type Trs struct {
+	client    transmissionrpc.Client
+	addPaused bool
+}
 
-var addPaused, _ = strconv.ParseBool(os.Getenv("ADD_PAUSED"))
-
-func init() {
+func NewTrs() TransmissionService {
+	paused, _ := strconv.ParseBool(os.Getenv("ADD_PAUSED"))
 	const timeout time.Duration = 12 * time.Second
 	transmissionbt, err := transmissionrpc.New(
 		os.Getenv("TRANSMISSION_HOST"),
@@ -27,12 +33,15 @@ func init() {
 	if err != nil {
 		panic(err)
 	} else {
-		client = *transmissionbt
+		return &Trs{
+			client:    *transmissionbt,
+			addPaused: paused,
+		}
 	}
 }
 
-func (trs *Trs) CheckVersion() (ok bool) {
-	ok, serverVersion, serverMinimumVersion, err := client.RPCVersion()
+func (trs *Trs) CheckVersion() bool {
+	ok, serverVersion, serverMinimumVersion, err := trs.client.RPCVersion()
 	if err != nil {
 		panic(err)
 	}
@@ -46,8 +55,30 @@ func (trs *Trs) CheckVersion() (ok bool) {
 	return true
 }
 
+func (trs *Trs) AddTorrent(episode Episode) error {
+	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, Paused: &trs.addPaused}
+
+	_, err := trs.client.TorrentAdd(torrentToAdd)
+
+	return err
+}
+
+func (trs *Trs) CleanFinished() ([]string, error) {
+	ids, titles := trs.getFinished()
+
+	err := trs.remove(ids)
+
+	if err != nil {
+		Logger.Error().
+			Str("action", "remove torrents").
+			Err(err)
+	}
+
+	return titles, err
+}
+
 func (trs *Trs) getAllTorrents(fields []string) (t []*transmissionrpc.Torrent) {
-	torrents, err := client.TorrentGet(fields, nil)
+	torrents, err := trs.client.TorrentGet(fields, nil)
 	if err != nil {
 		panic(err)
 	} else {
@@ -69,17 +100,9 @@ func (trs *Trs) getFinished() (ids []int64, titles []string) {
 	return finishedTorrentIds, finishedTorrentTitles
 }
 
-func (trs *Trs) AddDownload(episode Episode) error {
-	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, Paused: &addPaused}
-
-	_, err := client.TorrentAdd(torrentToAdd)
-
-	return err
-}
-
 func (trs *Trs) remove(ids []int64) error {
 	payload := &transmissionrpc.TorrentRemovePayload{IDs: ids, DeleteLocalData: false}
-	err := client.TorrentRemove(payload)
+	err := trs.client.TorrentRemove(payload)
 
 	return err
 }

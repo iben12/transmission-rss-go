@@ -46,7 +46,7 @@ func (h *Episodes) All() ([]Episode, error) {
 }
 
 func (h *Episodes) DownloadEpisode(episode Episode) error {
-	return h.transmission.AddDownload(episode)
+	return h.transmission.AddTorrent(episode)
 }
 
 func NewEpisodes() EpisodeHandler {

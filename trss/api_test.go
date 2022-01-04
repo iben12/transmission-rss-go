@@ -24,6 +24,8 @@ func TestApi(t *testing.T) {
 	trss.FeedService = mockFeeds
 	mockEpisodes := &mocks.MockEpisodes{}
 	trss.EpisodeService = mockEpisodes
+	mockTrs := &mocks.MockTransmissionService{}
+	trss.TrsService = mockTrs
 
 	t.Run("Feeds endpoint", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -202,5 +204,59 @@ func TestApi(t *testing.T) {
 
 		assert.Equal(expectedEpisodes, responseData.Episodes)
 		assert.Equal(expectedErrors, responseData.Errors)
+	})
+
+	t.Run("Clean endpoint", func(t *testing.T) {
+		mockTrs.MockCleanFinished = func() ([]string, error) {
+			return []string{"Episode title"}, nil
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		w := httptest.NewRecorder()
+		api := new(trss.Api)
+
+		api.Clean(w, req)
+
+		res := w.Result()
+
+		assert.Equal(200, res.StatusCode)
+
+		defer res.Body.Close()
+		data, _ := ioutil.ReadAll(res.Body)
+
+		responseData := []string{}
+
+		json.Unmarshal(data, &responseData)
+
+		expectedResponse := []string{"Episode title"}
+
+		assert.Equal(expectedResponse, responseData)
+	})
+
+	t.Run("Clean endpoint fail", func(t *testing.T) {
+		mockTrs.MockCleanFinished = func() ([]string, error) {
+			return []string{}, errors.New("Remove error")
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		w := httptest.NewRecorder()
+		api := new(trss.Api)
+
+		api.Clean(w, req)
+
+		res := w.Result()
+
+		assert.Equal(500, res.StatusCode)
+
+		defer res.Body.Close()
+		data, _ := ioutil.ReadAll(res.Body)
+
+		responseData := map[string]string{}
+
+		json.Unmarshal(data, &responseData)
+
+		expectedResponse := map[string]string{"error": "Could not remove torrents"}
+
+		assert.Equal(expectedResponse, responseData)
 	})
 }
