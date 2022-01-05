@@ -114,5 +114,11 @@ func notify(action string, titles []string) {
 		body += "\n" + title
 	}
 
-	SlackClient.Send(title, body)
+	err := SlackClient.Send(title, body)
+
+	if err != nil {
+		Logger.Error().
+			Str("action", "send notification").
+			Err(err).Msg("Cloud not send notification")
+	}
 }

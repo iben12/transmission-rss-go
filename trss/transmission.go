@@ -20,7 +20,7 @@ type Trs struct {
 	addPaused bool
 }
 
-func NewTrs() TransmissionService {
+func NewTrs() *Trs {
 	paused, _ := strconv.ParseBool(os.Getenv("ADD_PAUSED"))
 	const timeout time.Duration = 12 * time.Second
 	transmissionbt, err := transmissionrpc.New(

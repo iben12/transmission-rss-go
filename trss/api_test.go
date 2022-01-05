@@ -12,6 +12,7 @@ import (
 
 	"github.com/iben12/transmission-rss-go/tests/mocks"
 	trss "github.com/iben12/transmission-rss-go/trss"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -26,6 +27,7 @@ func TestApi(t *testing.T) {
 	trss.EpisodeService = mockEpisodes
 	mockTrs := &mocks.MockTransmissionService{}
 	trss.TrsService = mockTrs
+	trss.Logger = zerolog.New(ioutil.Discard).With().Timestamp().Logger()
 
 	t.Run("Feeds endpoint", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
