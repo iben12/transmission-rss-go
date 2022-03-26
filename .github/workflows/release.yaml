@@ -32,7 +32,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: olegtarasov/get-tag@v2.1
+        id: tagName
       - name: Build image
-        run: docker build -t iben12/transmission-rss-go:latest -t iben12/transmission-rss-go:$GITHUB_REF .
+        run: docker build -t iben12/transmission-rss-go:latest -t iben12/transmission-rss-go:${{ env.GIT_TAG_NAME }} .
       - name: Push to DockerHub
         run: docker push --all-tags iben12/transmission-rss-go
