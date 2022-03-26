@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y ca-certificates
 
 COPY go.mod go.sum main.go ./
-COPY ./src ./src
+COPY . .
 
 RUN go get
 
