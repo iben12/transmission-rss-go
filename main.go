@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/iben12/transmission-rss-go/trss"
@@ -37,16 +38,27 @@ func handleRequests() {
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
+	excludedPaths := strings.Split(os.Getenv("LOGGING_EXCLUDE_PATHS"), ",")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Do stuff here
-		transmissionrss.Logger.Info().
-			Str("action", "request").
-			Str("URI", r.RequestURI).
-			Str("Method", r.Method).
-			Msg("Incoming request")
-		// Call the next handler, which can be another middleware in the chain, or the final handler.
+		if !contains(excludedPaths, r.RequestURI) {
+			transmissionrss.Logger.Info().
+				Str("action", "request").
+				Str("URI", r.RequestURI).
+				Str("Method", r.Method).
+				Msg("Incoming request")
+		}
+
 		next.ServeHTTP(w, r)
 	})
+}
+
+func contains(elems []string, v string) bool {
+	for _, s := range elems {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }
 
 func main() {
