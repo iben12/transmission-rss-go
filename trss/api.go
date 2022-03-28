@@ -5,8 +5,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
 var (
