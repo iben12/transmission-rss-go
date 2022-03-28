@@ -25,7 +25,7 @@ func handleRequests() {
 	router.HandleFunc("/api/cleanup", api.Clean)
 	router.PathPrefix("/").Handler(static)
 
-	err := http.ListenAndServe("127.0.0.1:8080", router)
+	err := http.ListenAndServe("0.0.0.0:8080", router)
 	transmissionrss.Logger.Fatal().Err(err)
 }
 
