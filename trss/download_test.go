@@ -2,32 +2,36 @@ package transmissionrss_test
 
 import (
 	"errors"
-	"testing"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/iben12/transmission-rss-go/tests/mocks"
 	trss "github.com/iben12/transmission-rss-go/trss"
-	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
-func TestDownload(t *testing.T) {
-	assert := assert.New(t)
-	mockEpisodes := &mocks.MockEpisodes{}
+var _ = Describe("Download", func() {
+	var mockEpisodes *mocks.MockEpisodes
+	var expectedEpisodeId string
+	var feedItems []trss.FeedItem
 
-	t.Run("Episodes download", func(t *testing.T) {
-		expectedEpisodeId := "22"
-		feedItems := []trss.FeedItem{
+	BeforeEach(func() {
+		mockEpisodes = &mocks.MockEpisodes{}
+
+		expectedEpisodeId = "22"
+		feedItems = []trss.FeedItem{
 			{ShowId: "1", EpisodeId: "12"},
 			{ShowId: "2", EpisodeId: expectedEpisodeId},
 		}
+	})
 
-		mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
-			if e.ShowId == "1" {
-				return *e, nil // episode exists
-			} else {
-				return trss.Episode{}, gorm.ErrRecordNotFound // episode does not exist
-			}
+	It("should download episodes", func() {
+		findMockData := map[string]findMockData{
+			"1": {episode: true, err: nil},
+			"2": {episode: false, err: gorm.ErrRecordNotFound},
 		}
+
+		createFindMock(mockEpisodes, findMockData)
 
 		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
 			return nil
@@ -40,21 +44,17 @@ func TestDownload(t *testing.T) {
 
 		downloaded, _ := trss.Download(feedItems, mockEpisodes)
 
-		expectedLength := 1
-		assert.Equal(len(downloaded), expectedLength)
-		assert.Equal(downloaded[0].EpisodeId, expectedEpisodeId)
+		Expect(len(downloaded)).To(Equal(1))
+		Expect(downloaded[0].EpisodeId).To(Equal(expectedEpisodeId))
 	})
 
-	t.Run("Episodes fail", func(t *testing.T) {
-		expectedEpisodeId := "22"
-		feedItems := []trss.FeedItem{
-			{ShowId: "1", EpisodeId: "12"},
-			{ShowId: "2", EpisodeId: expectedEpisodeId},
+	It("should return error if download fails", func() {
+		findMockData := map[string]findMockData{
+			"1": {episode: false, err: gorm.ErrRecordNotFound},
+			"2": {episode: false, err: gorm.ErrRecordNotFound},
 		}
 
-		mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
-			return trss.Episode{}, gorm.ErrRecordNotFound // episode does not exist
-		}
+		createFindMock(mockEpisodes, findMockData)
 
 		transmissionError := errors.New("Transmission error")
 
@@ -77,11 +77,24 @@ func TestDownload(t *testing.T) {
 
 		downloaded, errs := trss.Download(feedItems, mockEpisodes)
 
-		expectedLength := 0
-		assert.Equal(len(downloaded), expectedLength)
-
-		expectedErrors := []string{transmissionError.Error(), dbError.Error()}
-
-		assert.Equal(errs, expectedErrors)
+		Expect(downloaded).To(HaveLen(0))
+		Expect(errs).To(ContainElements(transmissionError.Error(), dbError.Error()))
 	})
+})
+
+type findMockData struct {
+	episode bool
+	err     error
+}
+
+func createFindMock(mockEpisodes *mocks.MockEpisodes, data map[string]findMockData) {
+	mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
+		var episode *trss.Episode
+		if data[e.ShowId].episode {
+			episode = e
+		} else {
+			episode = &trss.Episode{}
+		}
+		return *episode, data[e.ShowId].err
+	}
 }
