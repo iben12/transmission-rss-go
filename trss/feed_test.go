@@ -3,22 +3,23 @@ package transmissionrss_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
 	"github.com/iben12/transmission-rss-go/tests/mocks"
 	"github.com/iben12/transmission-rss-go/trss"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestFeedParse(t *testing.T) {
-	assert := assert.New(t)
+var _ = Describe("Feed", func() {
 
-	t.Run("Valid XML", func(t *testing.T) {
+	It("should parse valid XML", func() {
 		url := "/feed/1234"
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			assert.Equal(url, req.URL.String())
+		handler := func(rw http.ResponseWriter, req *http.Request) {
+			Expect(url).To(Equal(req.URL.String()))
 			rw.Write([]byte(mocks.ValidXml))
-		}))
+		}
+
+		server := createServer(handler)
 
 		defer server.Close()
 
@@ -28,16 +29,16 @@ func TestFeedParse(t *testing.T) {
 
 		items, _ := feed.FetchItems(rssAddress)
 
-		expectedLength := 1
-
-		assert.Equal(len(items), expectedLength)
-		assert.Equal(items[0].ShowTitle, "Million Dollar Listing: Los Angeles")
+		Expect(len(items)).To(Equal(1))
+		Expect(items[0].ShowTitle).To(Equal("Million Dollar Listing: Los Angeles"))
 	})
 
-	t.Run("Invalid XML", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	It("should error on invalid XML", func() {
+		handler := func(rw http.ResponseWriter, req *http.Request) {
 			rw.Write([]byte(mocks.InvalidXml))
-		}))
+		}
+
+		server := createServer(handler)
 
 		defer server.Close()
 
@@ -45,9 +46,13 @@ func TestFeedParse(t *testing.T) {
 
 		_, err := feed.FetchItems(server.URL)
 
-		if assert.Error(err) {
-			assert.Equal(err.Error(), "cannot parse XML")
-		}
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("cannot parse XML"))
 	})
+})
 
+func createServer(handler func(rw http.ResponseWriter, req *http.Request)) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(handler))
+
+	return server
 }
