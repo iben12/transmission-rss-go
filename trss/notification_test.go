@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	helpers "github.com/iben12/transmission-rss-go/tests/helpers"
 	trss "github.com/iben12/transmission-rss-go/trss"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +17,9 @@ func TestNotification(t *testing.T) {
 
 	t.Run("Notification gets through", func(t *testing.T) {
 		expectedRequestBody := `{"channel":"","text":"hello","blocks":[{"type":"section","text":{"text":":arrow_up_down: *hello*\nbello","type":"mrkdwn"}}]}`
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// server := httptest.NewServer(http.HandlerFunc())
+
+		handler := func(rw http.ResponseWriter, req *http.Request) {
 			assert.Equal("/services/testurl", req.URL.String())
 
 			defer req.Body.Close()
@@ -24,7 +27,9 @@ func TestNotification(t *testing.T) {
 			assert.Equal(expectedRequestBody, string(body))
 
 			rw.Write([]byte("ok"))
-		}))
+		}
+
+		server := helpers.CreateServer(handler)
 
 		os.Setenv("SLACK_URL", server.URL+"/services/testurl")
 

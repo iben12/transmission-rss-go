@@ -2,8 +2,8 @@ package transmissionrss_test
 
 import (
 	"net/http"
-	"net/http/httptest"
 
+	helpers "github.com/iben12/transmission-rss-go/tests/helpers"
 	"github.com/iben12/transmission-rss-go/tests/mocks"
 	"github.com/iben12/transmission-rss-go/trss"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,7 +19,7 @@ var _ = Describe("Feed", func() {
 			rw.Write([]byte(mocks.ValidXml))
 		}
 
-		server := createServer(handler)
+		server := helpers.CreateServer(handler)
 
 		defer server.Close()
 
@@ -38,7 +38,7 @@ var _ = Describe("Feed", func() {
 			rw.Write([]byte(mocks.InvalidXml))
 		}
 
-		server := createServer(handler)
+		server := helpers.CreateServer(handler)
 
 		defer server.Close()
 
@@ -50,9 +50,3 @@ var _ = Describe("Feed", func() {
 		Expect(err.Error()).To(Equal("cannot parse XML"))
 	})
 })
-
-func createServer(handler func(rw http.ResponseWriter, req *http.Request)) *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(handler))
-
-	return server
-}

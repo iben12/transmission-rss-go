@@ -26,3 +26,22 @@ func (h *MockEpisodes) All() ([]trss.Episode, error) {
 func (h *MockEpisodes) DownloadEpisode(e trss.Episode) error {
 	return h.MockDownloadEpisode(e)
 }
+
+type FindMockData struct {
+	Episode bool
+	Err     error
+}
+
+func CreateFindMock(mockEpisodes *MockEpisodes, data map[string]FindMockData) *MockEpisodes {
+	mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
+		var episode *trss.Episode
+		if data[e.ShowId].Episode {
+			episode = e
+		} else {
+			episode = &trss.Episode{}
+		}
+		return *episode, data[e.ShowId].Err
+	}
+
+	return mockEpisodes
+}

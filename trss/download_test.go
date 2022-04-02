@@ -11,12 +11,12 @@ import (
 )
 
 var _ = Describe("Download", func() {
-	var mockEpisodes *mocks.MockEpisodes
+	var mockEpisodes mocks.MockEpisodes
 	var expectedEpisodeId string
 	var feedItems []trss.FeedItem
 
 	BeforeEach(func() {
-		mockEpisodes = &mocks.MockEpisodes{}
+		mockEpisodes = mocks.MockEpisodes{}
 
 		expectedEpisodeId = "22"
 		feedItems = []trss.FeedItem{
@@ -26,12 +26,12 @@ var _ = Describe("Download", func() {
 	})
 
 	It("should download episodes", func() {
-		findMockData := map[string]findMockData{
-			"1": {episode: true, err: nil},
-			"2": {episode: false, err: gorm.ErrRecordNotFound},
+		findMockData := map[string]mocks.FindMockData{
+			"1": {Episode: true, Err: nil},
+			"2": {Episode: false, Err: gorm.ErrRecordNotFound},
 		}
 
-		createFindMock(mockEpisodes, findMockData)
+		mocks.CreateFindMock(&mockEpisodes, findMockData)
 
 		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
 			return nil
@@ -42,19 +42,19 @@ var _ = Describe("Download", func() {
 			return nil
 		}
 
-		downloaded, _ := trss.Download(feedItems, mockEpisodes)
+		downloaded, _ := trss.Download(feedItems, &mockEpisodes)
 
 		Expect(len(downloaded)).To(Equal(1))
 		Expect(downloaded[0].EpisodeId).To(Equal(expectedEpisodeId))
 	})
 
 	It("should return error if download fails", func() {
-		findMockData := map[string]findMockData{
-			"1": {episode: false, err: gorm.ErrRecordNotFound},
-			"2": {episode: false, err: gorm.ErrRecordNotFound},
+		findMockData := map[string]mocks.FindMockData{
+			"1": {Episode: false, Err: gorm.ErrRecordNotFound},
+			"2": {Episode: false, Err: gorm.ErrRecordNotFound},
 		}
 
-		createFindMock(mockEpisodes, findMockData)
+		mocks.CreateFindMock(&mockEpisodes, findMockData)
 
 		transmissionError := errors.New("Transmission error")
 
@@ -75,26 +75,9 @@ var _ = Describe("Download", func() {
 			return nil
 		}
 
-		downloaded, errs := trss.Download(feedItems, mockEpisodes)
+		downloaded, errs := trss.Download(feedItems, &mockEpisodes)
 
 		Expect(downloaded).To(HaveLen(0))
 		Expect(errs).To(ContainElements(transmissionError.Error(), dbError.Error()))
 	})
 })
-
-type findMockData struct {
-	episode bool
-	err     error
-}
-
-func createFindMock(mockEpisodes *mocks.MockEpisodes, data map[string]findMockData) {
-	mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
-		var episode *trss.Episode
-		if data[e.ShowId].episode {
-			episode = e
-		} else {
-			episode = &trss.Episode{}
-		}
-		return *episode, data[e.ShowId].err
-	}
-}
