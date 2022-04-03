@@ -2,6 +2,7 @@ package transmissionrss_test
 
 import (
 	"net/http"
+	"net/http/httptest"
 
 	helpers "github.com/iben12/transmission-rss-go/tests/helpers"
 	"github.com/iben12/transmission-rss-go/tests/mocks"
@@ -11,6 +12,11 @@ import (
 )
 
 var _ = Describe("Feed", func() {
+	var server *httptest.Server
+
+	AfterEach(func() {
+		server.Close()
+	})
 
 	It("should parse valid XML", func() {
 		url := "/feed/1234"
@@ -19,9 +25,7 @@ var _ = Describe("Feed", func() {
 			rw.Write([]byte(mocks.ValidXml))
 		}
 
-		server := helpers.CreateServer(handler)
-
-		defer server.Close()
+		server = helpers.CreateServer(handler)
 
 		feed := new(transmissionrss.Feeds)
 
@@ -39,8 +43,6 @@ var _ = Describe("Feed", func() {
 		}
 
 		server := helpers.CreateServer(handler)
-
-		defer server.Close()
 
 		feed := new(transmissionrss.Feeds)
 
