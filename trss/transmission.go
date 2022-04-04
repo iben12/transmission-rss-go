@@ -16,8 +16,8 @@ type TransmissionService interface {
 }
 
 type Trs struct {
-	client    transmissionrpc.Client
-	addPaused bool
+	Client    transmissionrpc.Client
+	AddPaused bool
 }
 
 func NewTrs() *Trs {
@@ -34,24 +34,26 @@ func NewTrs() *Trs {
 		panic(err)
 	} else {
 		return &Trs{
-			client:    *transmissionbt,
-			addPaused: paused,
+			Client:    *transmissionbt,
+			AddPaused: paused,
 		}
 	}
 }
 
 func (trs *Trs) CheckVersion() bool {
-	ok, serverVersion, serverMinimumVersion, err := trs.client.RPCVersion()
+	ok, serverVersion, serverMinimumVersion, err := trs.Client.RPCVersion()
 	if err != nil {
 		Logger.Error().
 			Str("action", "transmission check version").
 			Err(err).Msg("")
+		return false
 	}
 	if !ok {
 		Logger.Fatal().
 			Str("action", "transmission check version").
 			Err(fmt.Errorf("remote transmission RPC version (v%d) is incompatible with the transmission library (v%d): remote needs at least v%d",
 				serverVersion, transmissionrpc.RPCVersion, serverMinimumVersion))
+		return false
 	}
 
 	Logger.Info().
@@ -63,9 +65,9 @@ func (trs *Trs) CheckVersion() bool {
 }
 
 func (trs *Trs) AddTorrent(episode Episode) error {
-	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, Paused: &trs.addPaused}
+	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, Paused: &trs.AddPaused}
 
-	_, err := trs.client.TorrentAdd(torrentToAdd)
+	_, err := trs.Client.TorrentAdd(torrentToAdd)
 
 	return err
 }
@@ -85,7 +87,7 @@ func (trs *Trs) CleanFinished() ([]string, error) {
 }
 
 func (trs *Trs) getAllTorrents(fields []string) (t []*transmissionrpc.Torrent) {
-	torrents, err := trs.client.TorrentGet(fields, nil)
+	torrents, err := trs.Client.TorrentGet(fields, nil)
 	if err != nil {
 		panic(err)
 	} else {
@@ -109,7 +111,7 @@ func (trs *Trs) getFinished() (ids []int64, titles []string) {
 
 func (trs *Trs) remove(ids []int64) error {
 	payload := &transmissionrpc.TorrentRemovePayload{IDs: ids, DeleteLocalData: false}
-	err := trs.client.TorrentRemove(payload)
+	err := trs.Client.TorrentRemove(payload)
 
 	return err
 }
