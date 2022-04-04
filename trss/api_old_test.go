@@ -118,7 +118,7 @@ func TestApi(t *testing.T) {
 			return trss.Episode{}, gorm.ErrRecordNotFound
 		}
 
-		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
+		mockTrs.MockAddTorrent = func(e trss.Episode) error {
 			return nil
 		}
 
@@ -169,7 +169,7 @@ func TestApi(t *testing.T) {
 			return trss.Episode{}, gorm.ErrRecordNotFound
 		}
 
-		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
+		mockTrs.MockAddTorrent = func(e trss.Episode) error {
 			return errors.New("Transmission error")
 		}
 

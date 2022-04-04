@@ -17,7 +17,7 @@ type EpisodeHandler interface {
 	AddEpisode(episode *Episode) error
 	FindEpisode(episode *Episode) (Episode, error)
 	All() ([]Episode, error)
-	DownloadEpisode(episode Episode) error
+	// DownloadEpisode(episode Episode) error
 }
 
 type Episodes struct {
@@ -43,10 +43,6 @@ func (h *Episodes) All() ([]Episode, error) {
 	result := h.Db.Find(&episodes)
 
 	return episodes, result.Error
-}
-
-func (h *Episodes) DownloadEpisode(episode Episode) error {
-	return h.transmission.AddTorrent(episode)
 }
 
 func NewEpisodes() EpisodeHandler {

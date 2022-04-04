@@ -12,6 +12,7 @@ import (
 
 var _ = Describe("Download", func() {
 	var mockEpisodes mocks.MockEpisodes
+	var mockTransmission mocks.MockTransmissionService
 	var expectedEpisodeId string
 	var feedItems []trss.FeedItem
 
@@ -33,7 +34,7 @@ var _ = Describe("Download", func() {
 
 		mocks.CreateFindMock(&mockEpisodes, findMockData)
 
-		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
+		mockTransmission.MockAddTorrent = func(e trss.Episode) error {
 			return nil
 		}
 
@@ -42,7 +43,7 @@ var _ = Describe("Download", func() {
 			return nil
 		}
 
-		downloaded, _ := trss.Download(feedItems, &mockEpisodes)
+		downloaded, _ := trss.Download(feedItems, &mockEpisodes, &mockTransmission)
 
 		Expect(len(downloaded)).To(Equal(1))
 		Expect(downloaded[0].EpisodeId).To(Equal(expectedEpisodeId))
@@ -58,7 +59,7 @@ var _ = Describe("Download", func() {
 
 		transmissionError := errors.New("Transmission error")
 
-		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
+		mockTransmission.MockAddTorrent = func(e trss.Episode) error {
 			if e.ShowId == "1" {
 				return transmissionError
 			}
@@ -75,7 +76,7 @@ var _ = Describe("Download", func() {
 			return nil
 		}
 
-		downloaded, errs := trss.Download(feedItems, &mockEpisodes)
+		downloaded, errs := trss.Download(feedItems, &mockEpisodes, &mockTransmission)
 
 		Expect(downloaded).To(HaveLen(0))
 		Expect(errs).To(ContainElements(transmissionError.Error(), dbError.Error()))

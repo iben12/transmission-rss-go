@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Download(feedItems []FeedItem, episodes EpisodeHandler) ([]Episode, []string) {
+func Download(feedItems []FeedItem, episodes EpisodeHandler, transmissionService TransmissionService) ([]Episode, []string) {
 	var (
 		episodesAdded []Episode
 		errs          []string
@@ -21,7 +21,7 @@ func Download(feedItems []FeedItem, episodes EpisodeHandler) ([]Episode, []strin
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 			resultChan := make(chan Episode, 1)
 			errChan := make(chan error, 1)
-			go processEpisode(feedItem, resultChan, errChan, episodes)
+			go processEpisode(feedItem, resultChan, errChan, episodes, transmissionService)
 
 			errorChans = append(errorChans, errChan)
 			resultChans = append(resultChans, resultChan)
@@ -57,6 +57,7 @@ func processEpisode(
 	result chan Episode,
 	err chan error,
 	episodeHandler EpisodeHandler,
+	transmission TransmissionService,
 ) {
 	defer close(result)
 	defer close(err)
@@ -70,7 +71,7 @@ func processEpisode(
 		Link:      feedItem.Link,
 	}
 
-	transmissionError := episodeHandler.DownloadEpisode(episode)
+	transmissionError := transmission.AddTorrent(episode)
 
 	if transmissionError == nil {
 		dbError := episodeHandler.AddEpisode(&episode)

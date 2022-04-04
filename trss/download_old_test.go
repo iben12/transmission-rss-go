@@ -13,6 +13,7 @@ import (
 func TestDownload(t *testing.T) {
 	assert := assert.New(t)
 	mockEpisodes := &mocks.MockEpisodes{}
+	mockTransmission := &mocks.MockTransmissionService{}
 
 	t.Run("Episodes download", func(t *testing.T) {
 		expectedEpisodeId := "22"
@@ -29,7 +30,7 @@ func TestDownload(t *testing.T) {
 			}
 		}
 
-		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
+		mockTransmission.MockAddTorrent = func(e trss.Episode) error {
 			return nil
 		}
 
@@ -38,7 +39,7 @@ func TestDownload(t *testing.T) {
 			return nil
 		}
 
-		downloaded, _ := trss.Download(feedItems, mockEpisodes)
+		downloaded, _ := trss.Download(feedItems, mockEpisodes, mockTransmission)
 
 		expectedLength := 1
 		assert.Equal(len(downloaded), expectedLength)
@@ -58,7 +59,7 @@ func TestDownload(t *testing.T) {
 
 		transmissionError := errors.New("Transmission error")
 
-		mockEpisodes.MockDownloadEpisode = func(e trss.Episode) error {
+		mockTransmission.MockAddTorrent = func(e trss.Episode) error {
 			if e.ShowId == "1" {
 				return transmissionError
 			}
@@ -75,7 +76,7 @@ func TestDownload(t *testing.T) {
 			return nil
 		}
 
-		downloaded, errs := trss.Download(feedItems, mockEpisodes)
+		downloaded, errs := trss.Download(feedItems, mockEpisodes, mockTransmission)
 
 		expectedLength := 0
 		assert.Equal(len(downloaded), expectedLength)

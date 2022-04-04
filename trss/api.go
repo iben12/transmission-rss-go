@@ -59,7 +59,7 @@ func (a *Api) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloaded, errs := Download(feedItems, EpisodeService)
+	downloaded, errs := Download(feedItems, EpisodeService, TrsService)
 
 	if len(downloaded) > 0 {
 		titles := []string{}
