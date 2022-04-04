@@ -152,7 +152,7 @@ var _ = Describe("Api", func() {
 			Expect(responseData.Errors).To(BeEmpty())
 		})
 
-		It("should return error if download fails", func() {
+		It("should return error if transmission add fails", func() {
 			mockFeeds.MockFetchItems = func(r string) ([]trss.FeedItem, error) {
 				feedItems := []trss.FeedItem{mocks.FeedItemExample}
 
@@ -191,6 +191,75 @@ var _ = Describe("Api", func() {
 
 			Expect(responseData.Episodes).To(BeEmpty())
 			Expect(responseData.Errors).To(ContainElement("Transmission error"))
+		})
+
+		It("should return error if feed fetch fails", func() {
+			mockFeeds.MockFetchItems = func(r string) ([]trss.FeedItem, error) {
+				return nil, errors.New("Feed error")
+			}
+
+			findMockData := map[string]mocks.FindMockData{
+				"1": {Episode: false, Err: gorm.ErrRecordNotFound},
+			}
+
+			mocks.CreateEpisodeFindMock(mockEpisodes, findMockData)
+
+			mockTrs.MockAddTorrent = func(e trss.Episode) error {
+				return errors.New("Transmission error")
+			}
+
+			mockEpisodes.MockAddEpisode = func(e *trss.Episode) error {
+				e.ID = 2
+				return nil
+			}
+
+			res, body := sendApiRequest(api.Download, http.MethodGet, "/")
+
+			GinkgoWriter.Println(string(body))
+			Expect(res.StatusCode).To(Equal(500))
+
+			responseData := map[string]string{}
+			json.Unmarshal(body, &responseData)
+
+			expectedEpisode := mocks.EpisodeExample
+			expectedEpisode.ID = 2
+
+			Expect(responseData["episodes"]).To(BeEmpty())
+			Expect(responseData["error"]).To(Equal("Could not parse feed"))
+		})
+	})
+
+	Context("Cleanup endpoint", func() {
+		It("returns cleaned torrent titles", func() {
+			mockTrs.MockCleanFinished = func() ([]string, error) {
+				return []string{"Episode title"}, nil
+			}
+
+			res, body := sendApiRequest(api.Clean, http.MethodGet, "/")
+
+			Expect(res.StatusCode).To(Equal(200))
+
+			responseData := []string{}
+
+			json.Unmarshal(body, &responseData)
+
+			Expect(responseData).To(ContainElement("Episode title"))
+		})
+
+		It("returns error if clean fails", func() {
+			mockTrs.MockCleanFinished = func() ([]string, error) {
+				return nil, errors.New("Remove error")
+			}
+
+			res, body := sendApiRequest(api.Clean, http.MethodGet, "/")
+
+			Expect(res.StatusCode).To(Equal(500))
+
+			responseData := map[string]string{}
+
+			json.Unmarshal(body, &responseData)
+
+			Expect(responseData["error"]).To(Equal("Could not remove torrents"))
 		})
 	})
 })
