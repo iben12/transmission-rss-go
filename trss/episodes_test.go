@@ -36,9 +36,10 @@ var _ = Describe("Episodes", func() {
 		db, sqlMock, err = sqlmock.New()
 		Expect(err).NotTo(HaveOccurred())
 
-		gdb, err := gorm.Open(mysql.New(mysql.Config{Conn: db, SkipInitializeWithVersion: true}), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent),
-		})
+		gdb, err := gorm.Open(
+			mysql.New(mysql.Config{Conn: db, SkipInitializeWithVersion: true}),
+			&gorm.Config{
+				Logger: logger.Default.LogMode(logger.Silent)})
 		Expect(err).NotTo(HaveOccurred())
 
 		episodes = &trss.Episodes{Db: gdb}
@@ -62,7 +63,6 @@ var _ = Describe("Episodes", func() {
 
 		It("returns items", func() {
 			episode := &trss.Episode{
-				Model:     gorm.Model{ID: 1},
 				ShowTitle: "Show Title",
 				Title:     "Episode Title",
 			}
@@ -75,8 +75,9 @@ var _ = Describe("Episodes", func() {
 						AddRow(1, episode.ShowTitle, episode.Title))
 
 			result, err := episodes.All()
+
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result[0]).To(BeEquivalentTo(*episode))
+			Expect(result[0].ID).To(Equal(uint(1)))
 		})
 	})
 
