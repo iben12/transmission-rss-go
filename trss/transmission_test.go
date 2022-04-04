@@ -37,6 +37,15 @@ var _ = Describe("Transmission", func() {
 
 			Expect(result).To(BeFalse())
 		})
+
+		It("server fails", func() {
+			arguments := "{}"
+			client = setUpTransmissionTestServer(arguments, 500, "failure")
+
+			result := client.CheckVersion()
+
+			Expect(result).To(BeFalse())
+		})
 	})
 
 	Context("add torrent", func() {
@@ -99,6 +108,16 @@ var _ = Describe("Transmission", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(titles).To(ContainElement("Torrent name"))
+		})
+
+		It("nothing to clean", func() {
+			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": false}]}`
+			client = setUpTransmissionTestServer(arguments, 200, "success")
+
+			titles, err := client.CleanFinished()
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(titles).To(BeEmpty())
 		})
 
 		It("nothing to clean", func() {
