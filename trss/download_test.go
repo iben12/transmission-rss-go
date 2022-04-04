@@ -32,7 +32,7 @@ var _ = Describe("Download", func() {
 			"2": {Episode: false, Err: gorm.ErrRecordNotFound},
 		}
 
-		mocks.CreateFindMock(&mockEpisodes, findMockData)
+		mocks.CreateEpisodeFindMock(&mockEpisodes, findMockData)
 
 		mockTransmission.MockAddTorrent = func(e trss.Episode) error {
 			return nil
@@ -55,7 +55,7 @@ var _ = Describe("Download", func() {
 			"2": {Episode: false, Err: gorm.ErrRecordNotFound},
 		}
 
-		mocks.CreateFindMock(&mockEpisodes, findMockData)
+		mocks.CreateEpisodeFindMock(&mockEpisodes, findMockData)
 
 		transmissionError := errors.New("Transmission error")
 

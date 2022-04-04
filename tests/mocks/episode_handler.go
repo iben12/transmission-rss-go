@@ -27,7 +27,7 @@ type FindMockData struct {
 	Err     error
 }
 
-func CreateFindMock(mockEpisodes *MockEpisodes, data map[string]FindMockData) *MockEpisodes {
+func CreateEpisodeFindMock(mockEpisodes *MockEpisodes, data map[string]FindMockData) *MockEpisodes {
 	mockEpisodes.MockFindEpisode = func(e *trss.Episode) (trss.Episode, error) {
 		var episode *trss.Episode
 		if data[e.ShowId].Episode {

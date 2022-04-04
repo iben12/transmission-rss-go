@@ -12,6 +12,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"gorm.io/gorm"
 
 	// helper "github.com/iben12/transmission-rss-go/tests/helper"
 	"github.com/iben12/transmission-rss-go/tests/mocks"
@@ -111,11 +112,85 @@ var _ = Describe("Api", func() {
 
 	Context("Download endpoint", func() {
 		It("should respond whith downloaded items", func() {
+			mockFeeds.MockFetchItems = func(r string) ([]trss.FeedItem, error) {
+				feedItems := []trss.FeedItem{mocks.FeedItemExample}
 
+				return feedItems, nil
+			}
+
+			findMockData := map[string]mocks.FindMockData{
+				"1": {Episode: false, Err: gorm.ErrRecordNotFound},
+			}
+
+			mocks.CreateEpisodeFindMock(mockEpisodes, findMockData)
+
+			mockTrs.MockAddTorrent = func(e trss.Episode) error {
+				return nil
+			}
+
+			mockEpisodes.MockAddEpisode = func(e *trss.Episode) error {
+				e.ID = 2
+				return nil
+			}
+
+			res, body := sendApiRequest(api.Download, http.MethodGet, "/")
+
+			GinkgoWriter.Println(string(body))
+			Expect(res.StatusCode).To(Equal(200))
+
+			type ResponseType struct {
+				Episodes []trss.Episode
+				Errors   []string
+			}
+			responseData := &ResponseType{}
+			json.Unmarshal(body, responseData)
+
+			expectedEpisode := mocks.EpisodeExample
+			expectedEpisode.ID = 2
+
+			Expect(responseData.Episodes).To(ContainElement(expectedEpisode))
+			Expect(responseData.Errors).To(BeEmpty())
 		})
 
-		It("should resturn error", func() {
+		It("should return error if download fails", func() {
+			mockFeeds.MockFetchItems = func(r string) ([]trss.FeedItem, error) {
+				feedItems := []trss.FeedItem{mocks.FeedItemExample}
 
+				return feedItems, nil
+			}
+
+			findMockData := map[string]mocks.FindMockData{
+				"1": {Episode: false, Err: gorm.ErrRecordNotFound},
+			}
+
+			mocks.CreateEpisodeFindMock(mockEpisodes, findMockData)
+
+			mockTrs.MockAddTorrent = func(e trss.Episode) error {
+				return errors.New("Transmission error")
+			}
+
+			mockEpisodes.MockAddEpisode = func(e *trss.Episode) error {
+				e.ID = 2
+				return nil
+			}
+
+			res, body := sendApiRequest(api.Download, http.MethodGet, "/")
+
+			GinkgoWriter.Println(string(body))
+			Expect(res.StatusCode).To(Equal(200))
+
+			type ResponseType struct {
+				Episodes []trss.Episode
+				Errors   []string
+			}
+			responseData := &ResponseType{}
+			json.Unmarshal(body, responseData)
+
+			expectedEpisode := mocks.EpisodeExample
+			expectedEpisode.ID = 2
+
+			Expect(responseData.Episodes).To(BeEmpty())
+			Expect(responseData.Errors).To(ContainElement("Transmission error"))
 		})
 	})
 })
