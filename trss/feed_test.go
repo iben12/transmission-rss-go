@@ -51,4 +51,28 @@ var _ = Describe("Feed", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("cannot parse XML"))
 	})
+
+	It("should error if server is unavailable", func() {
+		feed := new(transmissionrss.Feeds)
+
+		_, err := feed.FetchItems("http://localhost")
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("Get \"http://localhost\": dial tcp [::1]:80: connect: connection refused"))
+	})
+
+	It("should error if request fails", func() {
+		handler := func(rw http.ResponseWriter, req *http.Request) {
+			rw.WriteHeader(500)
+			rw.Write([]byte("HTTP 500 error"))
+		}
+
+		server := helpers.CreateServer(handler)
+		feed := new(transmissionrss.Feeds)
+
+		_, err := feed.FetchItems(server.URL)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("500 Internal Server Error"))
+	})
 })

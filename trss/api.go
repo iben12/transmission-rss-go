@@ -15,7 +15,7 @@ var (
 
 func NewApi() *Api {
 	EpisodeService = NewEpisodes()
-	FeedService = NewFeeds()
+	FeedService = new(Feeds)
 	TrsService = NewTrs()
 
 	TrsService.CheckVersion()
