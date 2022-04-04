@@ -17,15 +17,12 @@ import (
 	trss "github.com/iben12/transmission-rss-go/trss"
 )
 
-var (
-	client *trss.Trs
-)
-
 var _ = Describe("Transmission", func() {
+	var client *trss.Trs
 	Context("check version", func() {
 		It("is OK", func() {
 			arguments := fmt.Sprintf(`{"rpc-version-minimum": %v, "rpc-version": 17}`, transmissionrpc.RPCVersion)
-			setUpTransmissionTestServer(arguments)
+			client = setUpTransmissionTestServer(arguments, 200, "success")
 
 			result := client.CheckVersion()
 
@@ -34,7 +31,7 @@ var _ = Describe("Transmission", func() {
 
 		It("is not OK", func() {
 			arguments := fmt.Sprintf(`{"rpc-version-minimum": %v, "rpc-version": 17}`, transmissionrpc.RPCVersion+1)
-			setUpTransmissionTestServer(arguments)
+			client = setUpTransmissionTestServer(arguments, 200, "success")
 
 			result := client.CheckVersion()
 
@@ -52,7 +49,7 @@ var _ = Describe("Transmission", func() {
 				Link:      "url",
 			}
 			arguments := `{"torrent-added":{"name":"Torrent Name","id": 2}}`
-			setUpTransmissionTestServer(arguments)
+			client = setUpTransmissionTestServer(arguments, 200, "success")
 
 			err := client.AddTorrent(*episode)
 
@@ -68,18 +65,35 @@ var _ = Describe("Transmission", func() {
 				Link:      "url",
 			}
 			arguments := `{"torrent-duplicate":{"name":"Torrent Name","id": 2}}`
-			setUpTransmissionTestServer(arguments)
+			client = setUpTransmissionTestServer(arguments, 200, "success")
 
 			err := client.AddTorrent(*episode)
 
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("request fails", func() {
+			episode := &trss.Episode{
+				ShowId:    "1",
+				EpisodeId: "2",
+				ShowTitle: "Show",
+				Title:     "Episode",
+				Link:      "url",
+			}
+			arguments := `{}`
+			client = setUpTransmissionTestServer(arguments, 500, "fail")
+
+			err := client.AddTorrent(*episode)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("'torrent-add' rpc method failed: HTTP error 500: Internal Server Error"))
 		})
 	})
 
 	Context("clean finished", func() {
 		It("succeeds", func() {
 			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": true}]}`
-			setUpTransmissionTestServer(arguments)
+			client = setUpTransmissionTestServer(arguments, 200, "success")
 
 			titles, err := client.CleanFinished()
 
@@ -89,7 +103,7 @@ var _ = Describe("Transmission", func() {
 
 		It("nothing to clean", func() {
 			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": false}]}`
-			setUpTransmissionTestServer(arguments)
+			client = setUpTransmissionTestServer(arguments, 200, "success")
 
 			titles, err := client.CleanFinished()
 
@@ -99,7 +113,7 @@ var _ = Describe("Transmission", func() {
 	})
 })
 
-func setUpTransmissionTestServer(responseArguments string) {
+func setUpTransmissionTestServer(responseArguments string, status int, result string) *trss.Trs {
 	server := helpers.CreateServer(func(w http.ResponseWriter, r *http.Request) {
 		Expect(r.URL.String()).To(Equal("/transmission/rpc"))
 		body, _ := ioutil.ReadAll(r.Body)
@@ -107,7 +121,8 @@ func setUpTransmissionTestServer(responseArguments string) {
 		var request map[string]int
 		json.Unmarshal(body, &request)
 		tag := fmt.Sprint(request["tag"])
-		responseString := fmt.Sprintf(`{"arguments": %v, "result": "success", "tag": %v}`, responseArguments, tag)
+		responseString := fmt.Sprintf(`{"arguments": %v, "result": "%v", "tag": %v}`, responseArguments, result, tag)
+		w.WriteHeader(status)
 		w.Write([]byte(responseString))
 	})
 	testUrl, _ := url.Parse(server.URL)
@@ -124,5 +139,5 @@ func setUpTransmissionTestServer(responseArguments string) {
 
 	Expect(err).NotTo(HaveOccurred())
 
-	client = &trss.Trs{Client: *transmissionbt, AddPaused: true}
+	return &trss.Trs{Client: *transmissionbt, AddPaused: true}
 }
