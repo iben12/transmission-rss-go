@@ -66,13 +66,13 @@ func (f *Feeds) fetchRss(rssAddress string) (string, error) {
 		return "", err
 	}
 
+	if resp.StatusCode >= 400 {
+		return "", errors.New(resp.Status)
+	}
+
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	return string(body), nil
-}
-
-func NewFeeds() FeedHandler {
-	return new(Feeds)
 }

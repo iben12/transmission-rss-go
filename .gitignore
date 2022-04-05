@@ -2,3 +2,6 @@
 bin
 *.sql
 node_modules
+**/coverage
+**/ginkgo.report
+**/coverprofile.out

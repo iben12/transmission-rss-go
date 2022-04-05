@@ -17,22 +17,22 @@ type EpisodeHandler interface {
 	AddEpisode(episode *Episode) error
 	FindEpisode(episode *Episode) (Episode, error)
 	All() ([]Episode, error)
-	DownloadEpisode(episode Episode) error
+	// DownloadEpisode(episode Episode) error
 }
 
 type Episodes struct {
-	db           *gorm.DB
+	Db           *gorm.DB
 	transmission TransmissionService
 }
 
 func (h *Episodes) AddEpisode(episode *Episode) error {
-	result := h.db.Create(&episode)
+	result := h.Db.Create(&episode)
 	return result.Error
 }
 
 func (h *Episodes) FindEpisode(episodeToFind *Episode) (Episode, error) {
 	episode := Episode{}
-	result := h.db.Where(episodeToFind).First(&episode)
+	result := h.Db.Where(episodeToFind).First(&episode)
 
 	return episode, result.Error
 }
@@ -40,17 +40,13 @@ func (h *Episodes) FindEpisode(episodeToFind *Episode) (Episode, error) {
 func (h *Episodes) All() ([]Episode, error) {
 	episodes := []Episode{}
 
-	result := h.db.Find(&episodes)
+	result := h.Db.Find(&episodes)
 
 	return episodes, result.Error
-}
-
-func (h *Episodes) DownloadEpisode(episode Episode) error {
-	return h.transmission.AddTorrent(episode)
 }
 
 func NewEpisodes() EpisodeHandler {
 	dbConnection := new(DB).getConnection()
 	transmissionClient := NewTrs()
-	return &Episodes{db: dbConnection, transmission: transmissionClient}
+	return &Episodes{Db: dbConnection, transmission: transmissionClient}
 }
