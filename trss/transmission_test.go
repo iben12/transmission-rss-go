@@ -158,5 +158,5 @@ func setUpTransmissionTestServer(responseArguments string, status int, result st
 
 	Expect(err).NotTo(HaveOccurred())
 
-	return &trss.Trs{Client: *transmissionbt, AddPaused: true}
+	return &trss.Trs{Client: transmissionbt, AddPaused: true}
 }

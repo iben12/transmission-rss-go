@@ -16,7 +16,7 @@ type TransmissionService interface {
 }
 
 type Trs struct {
-	Client    transmissionrpc.Client
+	Client    *transmissionrpc.Client
 	AddPaused bool
 }
 
@@ -34,7 +34,7 @@ func NewTrs() *Trs {
 		panic(err)
 	} else {
 		return &Trs{
-			Client:    *transmissionbt,
+			Client:    transmissionbt,
 			AddPaused: paused,
 		}
 	}
