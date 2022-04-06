@@ -28,7 +28,12 @@ var _ = Describe("Transmission", func() {
 
 		It("is OK", func() {
 			arguments := fmt.Sprintf(`{"rpc-version-minimum": %v, "rpc-version": 17}`, transmissionrpc.RPCVersion)
-			client, server = setUpTransmissionTestServer(arguments, 200, "success")
+			response := &TransmissionResponse{
+				arguments: arguments,
+				status:    200,
+				result:    "success",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response})
 
 			err := client.CheckVersion()
 
@@ -37,7 +42,12 @@ var _ = Describe("Transmission", func() {
 
 		It("is not OK", func() {
 			arguments := fmt.Sprintf(`{"rpc-version-minimum": %v, "rpc-version": 17}`, transmissionrpc.RPCVersion+1)
-			client, server = setUpTransmissionTestServer(arguments, 200, "success")
+			response := &TransmissionResponse{
+				arguments: arguments,
+				status:    200,
+				result:    "success",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response})
 
 			err := client.CheckVersion()
 
@@ -46,8 +56,12 @@ var _ = Describe("Transmission", func() {
 		})
 
 		It("server fails", func() {
-			arguments := "{}"
-			client, server = setUpTransmissionTestServer(arguments, 500, "failure")
+			response := &TransmissionResponse{
+				arguments: "{}",
+				status:    500,
+				result:    "failure",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response})
 
 			err := client.CheckVersion()
 
@@ -66,7 +80,12 @@ var _ = Describe("Transmission", func() {
 				Link:      "url",
 			}
 			arguments := `{"torrent-added":{"name":"Torrent Name","id": 2}}`
-			client, server = setUpTransmissionTestServer(arguments, 200, "success")
+			response := &TransmissionResponse{
+				arguments: arguments,
+				status:    200,
+				result:    "success",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response})
 
 			err := client.AddTorrent(*episode)
 
@@ -82,7 +101,12 @@ var _ = Describe("Transmission", func() {
 				Link:      "url",
 			}
 			arguments := `{"torrent-duplicate":{"name":"Torrent Name","id": 2}}`
-			client, server = setUpTransmissionTestServer(arguments, 200, "success")
+			response := &TransmissionResponse{
+				arguments: arguments,
+				status:    200,
+				result:    "success",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response})
 
 			err := client.AddTorrent(*episode)
 
@@ -97,8 +121,12 @@ var _ = Describe("Transmission", func() {
 				Title:     "Episode",
 				Link:      "url",
 			}
-			arguments := `{}`
-			client, server = setUpTransmissionTestServer(arguments, 500, "fail")
+			response := &TransmissionResponse{
+				arguments: "{}",
+				status:    500,
+				result:    "failure",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response})
 
 			err := client.AddTorrent(*episode)
 
@@ -110,7 +138,17 @@ var _ = Describe("Transmission", func() {
 	Context("clean finished", func() {
 		It("succeeds", func() {
 			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": true}]}`
-			client, server = setUpTransmissionTestServer(arguments, 200, "success")
+			response1 := &TransmissionResponse{
+				arguments: arguments,
+				status:    200,
+				result:    "success",
+			}
+			response2 := &TransmissionResponse{
+				arguments: arguments,
+				status:    200,
+				result:    "success",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response1, response2})
 
 			titles, err := client.CleanFinished()
 
@@ -120,7 +158,12 @@ var _ = Describe("Transmission", func() {
 
 		It("nothing to clean", func() {
 			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": false}]}`
-			client, server = setUpTransmissionTestServer(arguments, 200, "success")
+			response := &TransmissionResponse{
+				arguments: arguments,
+				status:    200,
+				result:    "success",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response})
 
 			titles, err := client.CleanFinished()
 
@@ -128,28 +171,62 @@ var _ = Describe("Transmission", func() {
 			Expect(titles).To(BeEmpty())
 		})
 
-		It("nothing to clean", func() {
-			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": false}]}`
-			client, server = setUpTransmissionTestServer(arguments, 200, "success")
+		It("server fails for getAllTorrents", func() {
+			response := &TransmissionResponse{
+				arguments: "{}",
+				status:    500,
+				result:    "failure",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response})
 
 			titles, err := client.CleanFinished()
 
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			Expect(titles).To(BeEmpty())
+		})
+
+		It("server fails for remove torrents", func() {
+			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": true}]}`
+			response1 := &TransmissionResponse{
+				arguments: arguments,
+				status:    200,
+				result:    "success",
+			}
+			response2 := &TransmissionResponse{
+				arguments: "{}",
+				status:    500,
+				result:    "failure",
+			}
+			client, server = setUpTransmissionTestServer([]*TransmissionResponse{response1, response2})
+
+			titles, err := client.CleanFinished()
+
+			Expect(err).To(HaveOccurred())
 			Expect(titles).To(BeEmpty())
 		})
 	})
 })
 
-func setUpTransmissionTestServer(responseArguments string, status int, result string) (*trss.Trs, *httptest.Server) {
+type TransmissionResponse struct {
+	arguments string
+	status    int
+	result    string
+}
+
+func setUpTransmissionTestServer(responses []*TransmissionResponse) (*trss.Trs, *httptest.Server) {
+	counter := 0
 	server := helpers.CreateServer(func(w http.ResponseWriter, r *http.Request) {
 		Expect(r.URL.String()).To(Equal("/transmission/rpc"))
 		body, _ := ioutil.ReadAll(r.Body)
 		GinkgoWriter.Println(string(body))
+		GinkgoWriter.Printf("counter is: %v", counter)
+		response := responses[counter]
+		counter++
 		var request map[string]int
 		json.Unmarshal(body, &request)
 		tag := fmt.Sprint(request["tag"])
-		responseString := fmt.Sprintf(`{"arguments": %v, "result": "%v", "tag": %v}`, responseArguments, result, tag)
-		w.WriteHeader(status)
+		responseString := fmt.Sprintf(`{"arguments": %v, "result": "%v", "tag": %v}`, response.arguments, response.result, tag)
+		w.WriteHeader(response.status)
 		w.Write([]byte(responseString))
 	})
 	testUrl, _ := url.Parse(server.URL)

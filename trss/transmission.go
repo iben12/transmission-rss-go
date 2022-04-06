@@ -96,16 +96,23 @@ func (trs *Trs) CleanFinished() ([]string, error) {
 		return []string{}, err
 	}
 
+	if len(ids) == 0 {
+		Logger.Info().
+			Str("action", "get finished torrents").
+			Msg("no finished torrents")
+		return []string{}, nil
+	}
+
 	removeErr := trs.remove(ids)
 
-	if err != nil {
+	if removeErr != nil {
 		Logger.Error().
 			Str("action", "remove torrents").
 			Err(removeErr).Msg("")
 		return []string{}, removeErr
 	}
 
-	return titles, err
+	return titles, nil
 }
 
 func (trs *Trs) getAllTorrents(fields []string) ([]*transmissionrpc.Torrent, error) {
