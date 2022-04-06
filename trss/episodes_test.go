@@ -50,11 +50,15 @@ var _ = Describe("Episodes", func() {
 	})
 
 	Context("All()", func() {
-		It("empty", func() {
-			var sqlSelectAll = "SELECT * FROM `episodes` WHERE `episodes`.`deleted_at` IS NULL"
+		var mockSelectAll *sqlmock.ExpectedQuery
 
-			sqlMock.ExpectQuery(regexp.QuoteMeta(sqlSelectAll)).
-				WillReturnRows(sqlmock.NewRows(nil))
+		BeforeEach(func() {
+			sqlSelectAll := "SELECT * FROM `episodes` WHERE `episodes`.`deleted_at` IS NULL"
+			mockSelectAll = sqlMock.ExpectQuery(regexp.QuoteMeta(sqlSelectAll))
+		})
+
+		It("empty", func() {
+			mockSelectAll.WillReturnRows(sqlmock.NewRows(nil))
 
 			result, err := episodes.All()
 			Expect(err).NotTo(HaveOccurred())
@@ -67,9 +71,7 @@ var _ = Describe("Episodes", func() {
 				Title:     "Episode Title",
 			}
 
-			var sqlSelectAll = "SELECT * FROM `episodes` WHERE `episodes`.`deleted_at` IS NULL"
-
-			sqlMock.ExpectQuery(regexp.QuoteMeta(sqlSelectAll)).
+			mockSelectAll.
 				WillReturnRows(
 					sqlmock.NewRows([]string{"id", "show_title", "title"}).
 						AddRow(1, episode.ShowTitle, episode.Title))
@@ -82,14 +84,19 @@ var _ = Describe("Episodes", func() {
 	})
 
 	Context("FindEpisode()", func() {
-		It("empty", func() {
-			episode := &trss.Episode{
+		var episode *trss.Episode
+		var mockFindOne *sqlmock.ExpectedQuery
+
+		BeforeEach(func() {
+			episode = &trss.Episode{
 				Model: gorm.Model{ID: 1},
 			}
+			sqlFindOne := "SELECT (.+) FROM `episodes` WHERE (.+)`id` = ? (.+) LIMIT 1"
+			mockFindOne = sqlMock.ExpectQuery(sqlFindOne).WithArgs(episode.Model.ID)
+		})
 
-			var sqlSelectAll = "SELECT * FROM `episodes` WHERE `episodes`.`id` = ? AND `episodes`.`deleted_at` IS NULL ORDER BY `episodes`.`id` LIMIT 1"
-
-			sqlMock.ExpectQuery(regexp.QuoteMeta(sqlSelectAll)).WithArgs(episode.Model.ID).
+		It("empty", func() {
+			mockFindOne.
 				WillReturnRows(sqlmock.NewRows(nil))
 
 			_, err := episodes.FindEpisode(episode)
@@ -97,13 +104,7 @@ var _ = Describe("Episodes", func() {
 		})
 
 		It("returns found item", func() {
-			episode := &trss.Episode{
-				Model: gorm.Model{ID: 1},
-			}
-
-			var sqlSelectAll = "SELECT * FROM `episodes` WHERE `episodes`.`id` = ? AND `episodes`.`deleted_at` IS NULL ORDER BY `episodes`.`id` LIMIT 1"
-
-			sqlMock.ExpectQuery(regexp.QuoteMeta(sqlSelectAll)).WithArgs(episode.Model.ID).
+			mockFindOne.
 				WillReturnRows(sqlmock.NewRows([]string{"id", "show_title", "title"}).AddRow(1, episode.ShowTitle, episode.Title))
 
 			result, err := episodes.FindEpisode(episode)
@@ -122,10 +123,10 @@ var _ = Describe("Episodes", func() {
 				Link:      "url",
 			}
 
-			var sqlSelectAll = "INSERT INTO `episodes` (`created_at`,`updated_at`,`deleted_at`,`show_id`,`episode_id`,`show_title`,`title`,`link`) VALUES (?,?,?,?,?,?,?,?)"
+			var sqlInsertEpisode = "INSERT INTO `episodes` (`created_at`,`updated_at`,`deleted_at`,`show_id`,`episode_id`,`show_title`,`title`,`link`) VALUES (?,?,?,?,?,?,?,?)"
 
 			sqlMock.ExpectBegin()
-			sqlMock.ExpectExec(regexp.QuoteMeta(sqlSelectAll)).
+			sqlMock.ExpectExec(regexp.QuoteMeta(sqlInsertEpisode)).
 				WithArgs(
 					AnyTime{},
 					AnyTime{},
