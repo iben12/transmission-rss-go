@@ -18,8 +18,6 @@ func NewApi() *Api {
 	FeedService = new(Feeds)
 	TrsService = NewTrs()
 
-	TrsService.CheckVersion()
-
 	return new(Api)
 }
 

@@ -10,7 +10,7 @@ import (
 )
 
 type TransmissionService interface {
-	CheckVersion() bool
+	CheckVersion() error
 	AddTorrent(e Episode) error
 	CleanFinished() ([]string, error)
 }
@@ -31,7 +31,20 @@ func NewTrs() *Trs {
 			HTTPTimeout: timeout,
 		})
 	if err != nil {
-		panic(err)
+		Logger.Fatal().Str("action", "Transmission connect").Err(err)
+		return nil
+	}
+
+	trs := &Trs{
+		Client:    transmissionbt,
+		AddPaused: paused,
+	}
+
+	trsErr := trs.CheckVersion()
+
+	if trsErr != nil {
+		Logger.Fatal().Err(trsErr)
+		return nil
 	} else {
 		return &Trs{
 			Client:    transmissionbt,
@@ -40,20 +53,21 @@ func NewTrs() *Trs {
 	}
 }
 
-func (trs *Trs) CheckVersion() bool {
+func (trs *Trs) CheckVersion() error {
 	ok, serverVersion, serverMinimumVersion, err := trs.Client.RPCVersion()
 	if err != nil {
 		Logger.Error().
 			Str("action", "transmission check version").
 			Err(err).Msg("")
-		return false
+		return err
 	}
 	if !ok {
-		Logger.Fatal().
+		err := fmt.Errorf("remote transmission RPC version (v%d) is incompatible with the transmission library (v%d): remote needs at least v%d",
+			serverVersion, transmissionrpc.RPCVersion, serverMinimumVersion)
+		Logger.Error().
 			Str("action", "transmission check version").
-			Err(fmt.Errorf("remote transmission RPC version (v%d) is incompatible with the transmission library (v%d): remote needs at least v%d",
-				serverVersion, transmissionrpc.RPCVersion, serverMinimumVersion))
-		return false
+			Err(err).Msg("")
+		return err
 	}
 
 	Logger.Info().
@@ -61,7 +75,7 @@ func (trs *Trs) CheckVersion() bool {
 		Msg(fmt.Sprintf("Remote transmission RPC version (v%d) is compatible with our transmissionrpc library (v%d)",
 			serverVersion, transmissionrpc.RPCVersion))
 
-	return true
+	return nil
 }
 
 func (trs *Trs) AddTorrent(episode Episode) error {
@@ -73,30 +87,43 @@ func (trs *Trs) AddTorrent(episode Episode) error {
 }
 
 func (trs *Trs) CleanFinished() ([]string, error) {
-	ids, titles := trs.getFinished()
+	ids, titles, err := trs.getFinished()
 
-	err := trs.remove(ids)
+	if err != nil {
+		Logger.Error().
+			Str("action", "get finished torrents").
+			Err(err).Msg("")
+		return []string{}, err
+	}
+
+	removeErr := trs.remove(ids)
 
 	if err != nil {
 		Logger.Error().
 			Str("action", "remove torrents").
-			Err(err).Msg("")
+			Err(removeErr).Msg("")
+		return []string{}, removeErr
 	}
 
 	return titles, err
 }
 
-func (trs *Trs) getAllTorrents(fields []string) (t []*transmissionrpc.Torrent) {
+func (trs *Trs) getAllTorrents(fields []string) ([]*transmissionrpc.Torrent, error) {
 	torrents, err := trs.Client.TorrentGet(fields, nil)
 	if err != nil {
-		panic(err)
+		Logger.Error().Str("action", "get all torrents").
+			Err(err).Msg("")
+		return nil, err
 	} else {
-		return torrents
+		return torrents, nil
 	}
 }
 
-func (trs *Trs) getFinished() (ids []int64, titles []string) {
-	torrents := trs.getAllTorrents([]string{"id", "isFinished", "name"})
+func (trs *Trs) getFinished() ([]int64, []string, error) {
+	torrents, err := trs.getAllTorrents([]string{"id", "isFinished", "name"})
+	if err != nil {
+		return nil, nil, err
+	}
 	finishedTorrentIds := []int64{}
 	finishedTorrentTitles := []string{}
 	for _, torrent := range torrents {
@@ -106,7 +133,7 @@ func (trs *Trs) getFinished() (ids []int64, titles []string) {
 		}
 	}
 
-	return finishedTorrentIds, finishedTorrentTitles
+	return finishedTorrentIds, finishedTorrentTitles, nil
 }
 
 func (trs *Trs) remove(ids []int64) error {

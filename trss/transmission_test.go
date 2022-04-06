@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"time"
@@ -19,32 +20,39 @@ import (
 
 var _ = Describe("Transmission", func() {
 	var client *trss.Trs
+	var server *httptest.Server
 	Context("check version", func() {
+		AfterEach(func() {
+			server.Close()
+		})
+
 		It("is OK", func() {
 			arguments := fmt.Sprintf(`{"rpc-version-minimum": %v, "rpc-version": 17}`, transmissionrpc.RPCVersion)
-			client = setUpTransmissionTestServer(arguments, 200, "success")
+			client, server = setUpTransmissionTestServer(arguments, 200, "success")
 
-			result := client.CheckVersion()
+			err := client.CheckVersion()
 
-			Expect(result).To(BeTrue())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("is not OK", func() {
 			arguments := fmt.Sprintf(`{"rpc-version-minimum": %v, "rpc-version": 17}`, transmissionrpc.RPCVersion+1)
-			client = setUpTransmissionTestServer(arguments, 200, "success")
+			client, server = setUpTransmissionTestServer(arguments, 200, "success")
 
-			result := client.CheckVersion()
+			err := client.CheckVersion()
 
-			Expect(result).To(BeFalse())
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("remote transmission RPC version (v17) is incompatible with the transmission library (v15): remote needs at least v16"))
 		})
 
 		It("server fails", func() {
 			arguments := "{}"
-			client = setUpTransmissionTestServer(arguments, 500, "failure")
+			client, server = setUpTransmissionTestServer(arguments, 500, "failure")
 
-			result := client.CheckVersion()
+			err := client.CheckVersion()
 
-			Expect(result).To(BeFalse())
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("can't get session values: 'session-get' rpc method failed: HTTP error 500: Internal Server Error"))
 		})
 	})
 
@@ -58,7 +66,7 @@ var _ = Describe("Transmission", func() {
 				Link:      "url",
 			}
 			arguments := `{"torrent-added":{"name":"Torrent Name","id": 2}}`
-			client = setUpTransmissionTestServer(arguments, 200, "success")
+			client, server = setUpTransmissionTestServer(arguments, 200, "success")
 
 			err := client.AddTorrent(*episode)
 
@@ -74,7 +82,7 @@ var _ = Describe("Transmission", func() {
 				Link:      "url",
 			}
 			arguments := `{"torrent-duplicate":{"name":"Torrent Name","id": 2}}`
-			client = setUpTransmissionTestServer(arguments, 200, "success")
+			client, server = setUpTransmissionTestServer(arguments, 200, "success")
 
 			err := client.AddTorrent(*episode)
 
@@ -90,7 +98,7 @@ var _ = Describe("Transmission", func() {
 				Link:      "url",
 			}
 			arguments := `{}`
-			client = setUpTransmissionTestServer(arguments, 500, "fail")
+			client, server = setUpTransmissionTestServer(arguments, 500, "fail")
 
 			err := client.AddTorrent(*episode)
 
@@ -102,7 +110,7 @@ var _ = Describe("Transmission", func() {
 	Context("clean finished", func() {
 		It("succeeds", func() {
 			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": true}]}`
-			client = setUpTransmissionTestServer(arguments, 200, "success")
+			client, server = setUpTransmissionTestServer(arguments, 200, "success")
 
 			titles, err := client.CleanFinished()
 
@@ -112,7 +120,7 @@ var _ = Describe("Transmission", func() {
 
 		It("nothing to clean", func() {
 			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": false}]}`
-			client = setUpTransmissionTestServer(arguments, 200, "success")
+			client, server = setUpTransmissionTestServer(arguments, 200, "success")
 
 			titles, err := client.CleanFinished()
 
@@ -122,7 +130,7 @@ var _ = Describe("Transmission", func() {
 
 		It("nothing to clean", func() {
 			arguments := `{"torrents":[{"name": "Torrent name", "id": 5, "isFinished": false}]}`
-			client = setUpTransmissionTestServer(arguments, 200, "success")
+			client, server = setUpTransmissionTestServer(arguments, 200, "success")
 
 			titles, err := client.CleanFinished()
 
@@ -132,7 +140,7 @@ var _ = Describe("Transmission", func() {
 	})
 })
 
-func setUpTransmissionTestServer(responseArguments string, status int, result string) *trss.Trs {
+func setUpTransmissionTestServer(responseArguments string, status int, result string) (*trss.Trs, *httptest.Server) {
 	server := helpers.CreateServer(func(w http.ResponseWriter, r *http.Request) {
 		Expect(r.URL.String()).To(Equal("/transmission/rpc"))
 		body, _ := ioutil.ReadAll(r.Body)
@@ -158,5 +166,5 @@ func setUpTransmissionTestServer(responseArguments string, status int, result st
 
 	Expect(err).NotTo(HaveOccurred())
 
-	return &trss.Trs{Client: transmissionbt, AddPaused: true}
+	return &trss.Trs{Client: transmissionbt, AddPaused: true}, server
 }

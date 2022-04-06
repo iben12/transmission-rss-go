@@ -5,12 +5,12 @@ import (
 )
 
 type MockTransmissionService struct {
-	MockCheckVersion  func() bool
+	MockCheckVersion  func() error
 	MockAddTorrent    func(e trss.Episode) error
 	MockCleanFinished func() ([]string, error)
 }
 
-func (t *MockTransmissionService) CheckVersion() bool {
+func (t *MockTransmissionService) CheckVersion() error {
 	return t.MockCheckVersion()
 }
 
