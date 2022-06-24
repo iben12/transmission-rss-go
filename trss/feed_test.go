@@ -58,7 +58,7 @@ var _ = Describe("Feed", func() {
 		_, err := feed.FetchItems("http://localhost")
 
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("Get \"http://localhost\": dial tcp [::1]:80: connect: connection refused"))
+		Expect(err.Error()).To(ContainSubstring("connect: connection refused"))
 	})
 
 	It("should error if request fails", func() {

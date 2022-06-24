@@ -1,4 +1,4 @@
-FROM golang:1.17.5 as backend
+FROM golang:1.18 as backend
 
 WORKDIR /app
 
