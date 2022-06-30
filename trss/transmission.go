@@ -16,12 +16,14 @@ type TransmissionService interface {
 }
 
 type Trs struct {
-	Client    *transmissionrpc.Client
-	AddPaused bool
+	Client      *transmissionrpc.Client
+	AddPaused   bool
+	DownloadDir string
 }
 
 func NewTrs() *Trs {
 	paused, _ := strconv.ParseBool(os.Getenv("ADD_PAUSED"))
+	downloadDir := os.Getenv("DOWNLOAD_DIR")
 	const timeout time.Duration = 12 * time.Second
 	transmissionbt, err := transmissionrpc.New(
 		os.Getenv("TRANSMISSION_HOST"),
@@ -36,8 +38,9 @@ func NewTrs() *Trs {
 	}
 
 	trs := &Trs{
-		Client:    transmissionbt,
-		AddPaused: paused,
+		Client:      transmissionbt,
+		AddPaused:   paused,
+		DownloadDir: downloadDir,
 	}
 
 	trsErr := trs.CheckVersion()
@@ -79,7 +82,7 @@ func (trs *Trs) CheckVersion() error {
 }
 
 func (trs *Trs) AddTorrent(episode Episode) error {
-	dir := fmt.Sprintf("/videos/Series/%v", episode.ShowTitle)
+	dir := fmt.Sprintf("%v/%v", trs.DownloadDir, episode.ShowTitle)
 	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, DownloadDir: &dir, Paused: &trs.AddPaused}
 
 	_, err := trs.Client.TorrentAdd(torrentToAdd)
