@@ -79,7 +79,8 @@ func (trs *Trs) CheckVersion() error {
 }
 
 func (trs *Trs) AddTorrent(episode Episode) error {
-	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, Paused: &trs.AddPaused}
+	dir := fmt.Sprintf("/videos/Series/%v", episode.ShowTitle)
+	torrentToAdd := &transmissionrpc.TorrentAddPayload{Filename: &episode.Link, DownloadDir: &dir, Paused: &trs.AddPaused}
 
 	_, err := trs.Client.TorrentAdd(torrentToAdd)
 
