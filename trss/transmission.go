@@ -49,10 +49,7 @@ func NewTrs() *Trs {
 		Logger.Fatal().Err(trsErr)
 		return nil
 	} else {
-		return &Trs{
-			Client:    transmissionbt,
-			AddPaused: paused,
-		}
+		return trs
 	}
 }
 
