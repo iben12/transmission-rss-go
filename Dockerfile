@@ -1,8 +1,8 @@
-FROM golang:1.18 as backend
+FROM golang:1.19 as backend
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get clean && apt-get update && apt-get install -y ca-certificates
 
 COPY go.mod go.sum main.go ./
 COPY . .

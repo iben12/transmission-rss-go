@@ -7,6 +7,12 @@ services:
       - 13306:3306
     # volumes:
     #   - mysql_data:/var/lib/mysql
+  psql:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: example
+    ports:
+      - 5432:5432
   transmission:
     image: ghcr.io/linuxserver/transmission
     environment:
@@ -28,6 +34,12 @@ services:
     volumes:
       - ./.env:/app/.env
     restart: "on-failure"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
 
 volumes:
   mysql_data:

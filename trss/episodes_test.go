@@ -91,8 +91,8 @@ var _ = Describe("Episodes", func() {
 			episode = &trss.Episode{
 				Model: gorm.Model{ID: 1},
 			}
-			sqlFindOne := "SELECT (.+) FROM `episodes` WHERE (.+)`id` = ? (.+) LIMIT 1"
-			mockFindOne = sqlMock.ExpectQuery(sqlFindOne).WithArgs(episode.Model.ID)
+			sqlFindOne := "SELECT (.+) FROM `episodes` WHERE (.+)`id` = ? (.+) LIMIT ?"
+			mockFindOne = sqlMock.ExpectQuery(sqlFindOne).WithArgs(episode.Model.ID, 1)
 		})
 
 		It("empty", func() {
