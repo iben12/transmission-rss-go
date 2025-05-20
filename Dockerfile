@@ -23,13 +23,22 @@ RUN npm i
 RUN npm run build
 
 
-FROM busybox
+FROM alpine:latest
+
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+
+# Copy Tailscale binaries from the tailscale image on Docker Hub.
+COPY --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscaled /app/tailscaled
+COPY --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscale /app/tailscale
+RUN mkdir -p /var/run/tailscale /var/cache/tailscale /var/lib/tailscale
 
 WORKDIR /app
 
 COPY --from=backend /app/bin/trss .
-COPY --from=backend /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY static ./static
 COPY --from=frontend /app/static/assets /app/static/assets
 
-CMD ["/app/trss"]
+COPY app-start.sh /app
+
+
+CMD ["/app/app-start.sh"]
