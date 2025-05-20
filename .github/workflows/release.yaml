@@ -36,11 +36,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: olegtarasov/get-tag@v2
-        id: tagName
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: iben12/transmission-rss-go:latest,iben12/transmission-rss-go:${{ env.GIT_TAG_NAME }}
+          tags: iben12/transmission-rss-go:latest,iben12/transmission-rss-go:${GITHUB_REF#refs/tags/}
