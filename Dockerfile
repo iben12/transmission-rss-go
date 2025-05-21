@@ -1,4 +1,4 @@
-FROM golang:1.19 as backend
+FROM golang:1.19 AS backend
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN go get
 RUN CGO_ENABLED=0 go build -o ./bin/trss ./main.go
 
 
-FROM node:16.10 as frontend
+FROM node:16.10 AS frontend
 
 WORKDIR /app
 
