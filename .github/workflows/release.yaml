@@ -51,4 +51,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: Dockerfile.tailscale
           push: true
-          tags: iben12/transmission-rss-go:latest,iben12/transmission-rss-go-tailscale:${{ steps.vars.outputs.tag }}
+          tags: iben12/transmission-rss-go:tailscale-latest,iben12/transmission-rss-go:tailscale-${{ steps.vars.outputs.tag }}
