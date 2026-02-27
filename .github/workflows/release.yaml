@@ -45,3 +45,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: iben12/transmission-rss-go:latest,iben12/transmission-rss-go:${{ steps.vars.outputs.tag }}
+      - name: Build and push Tailscale
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64
+          file: Dockerfile.tailscale
+          push: true
+          tags: iben12/transmission-rss-go:latest,iben12/transmission-rss-go-tailscale:${{ steps.vars.outputs.tag }}
